@@ -1,0 +1,26 @@
+### Create a new status
+POST http://localhost:3000/api/status
+Content-Type: application/json
+
+{
+    "name": "Rahatsız Etmeyin"
+}
+
+
+### Get All
+GET http://localhost:3000/api/status
+
+### Get One
+GET http://localhost:3000/api/status/1
+
+
+### Update status
+PATCH http://localhost:3000/api/status/2
+Content-Type: application/json
+
+{
+    "name": "Rahatsız"
+}
+
+### Delete status
+DELETE http://localhost:3000/api/status/2

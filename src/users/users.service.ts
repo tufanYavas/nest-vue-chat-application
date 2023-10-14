@@ -1,47 +1,92 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './user.entity';
+import { User } from './entities/user.entity';
+import { LoginLogService } from 'src/loginlog/loginlog.service';
+import { RankService } from 'src/rank/rank.service';
+import { Preference } from './entities/preference.entity';
+import { Permission } from './entities/permission.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private repo: Repository<User>) {}
+	constructor(
+		@InjectRepository(User)
+		private readonly usersRepository: Repository<User>,
+		@InjectRepository(Preference)
+		private readonly preferenceRepository: Repository<Preference>,
+		@InjectRepository(Permission)
+		private readonly permissionRepository: Repository<Permission>,
+		private readonly loginLogService: LoginLogService,
+		private readonly rankRepository: RankService,
+	) {}
 
-  create(username: string, password: string, gender: boolean) {
-    const user = this.repo.create({ username, password, gender });
+	getUserLogs(userId: number) {
+		return this.loginLogService.getAllLogsOfUser(userId);
+	}
 
-    return this.repo.save(user);
-  }
+	getAllLogs() {
+		return this.loginLogService.getAllLogs();
+	}
 
-  findOne(id: number) {
-    if (!id) {
-      return null;
-    }
-    return this.repo.findOneBy({ id });
-  }
+	async create(username: string, password: string, gender: boolean) {
+		const user = this.usersRepository.create({
+			username,
+			password,
+			gender,
+		});
 
-  findOneBy(json: object) {
-    return this.repo.findOneBy(json);
-  }
+		const preference = this.preferenceRepository.create();
+		user.preference = preference;
 
-  find(username: string) {
-    return this.repo.find({ where: { username } });
-  }
+		const permission = this.permissionRepository.create();
+		user.permission = permission;
 
-  async update(id: number, attrs: Partial<User>) {
-    const user = await this.findOne(id);
-    if (!user) {
-      throw new NotFoundException('user not found');
-    }
-    Object.assign(user, attrs);
-    return this.repo.save(user);
-  }
+		const defaultRank = await this.rankRepository.findOne(
+			parseInt(process.env.DEFAULT_RANK_ID),
+		);
 
-  async remove(id: number) {
-    const user = await this.findOne(id);
-    if (!user) {
-      throw new NotFoundException('user not found');
-    }
-    return this.repo.remove(user);
-  }
+		user.rank = defaultRank;
+
+		return this.usersRepository.save(user);
+	}
+
+	findOne(id: number) {
+		if (!id) {
+			return null;
+		}
+		return this.usersRepository.findOneBy({ id });
+	}
+
+	findOneWithRelations(where: object, relations: string[]) {
+		return this.usersRepository.findOne({ where, relations });
+	}
+
+	findOneBy(json: object) {
+		return this.usersRepository.findOneBy(json);
+	}
+
+	find(username: string) {
+		return this.usersRepository.find({ where: { username } });
+	}
+
+	findWithRelations(where: object, relations: string[]) {
+		return this.usersRepository.find({ where, relations });
+	}
+
+	async update(id: number, attrs: Partial<User>) {
+		const user = await this.findOne(id);
+		if (!user) {
+			throw new NotFoundException('user not found');
+		}
+		Object.assign(user, attrs);
+		return this.usersRepository.save(user);
+	}
+
+	async remove(id: number) {
+		const user = await this.findOne(id);
+		if (!user) {
+			throw new NotFoundException('user not found');
+		}
+		return this.usersRepository.remove(user);
+	}
 }

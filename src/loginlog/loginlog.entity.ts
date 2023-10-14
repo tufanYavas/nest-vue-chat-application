@@ -1,32 +1,32 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Entity()
 export class LoginLog {
-  @PrimaryGeneratedColumn()
-  id: number;
+	@PrimaryGeneratedColumn()
+	id: number;
 
-  @Column()
-  userId: number;
+	@Column()
+	userId: number;
 
-  @Column()
-  isVisitor: boolean;
+	@Column()
+	isVisitor: boolean;
 
-  @Column()
-  username: string;
+	@Column()
+	username: string;
 
-  @Column()
-  isMobile: boolean;
+	@Column()
+	isMobile: boolean;
 
-  @Column()
-  ip: string;
+	@Column()
+	ip: string;
 
-  @Column()
-  userAgent: string;
+	@Column()
+	userAgent: string;
 
-  @Column({ type: 'text', default: () => 'CURRENT_TIMESTAMP' })
-  date: Date;
+	@Column({ type: 'text', default: () => 'CURRENT_TIMESTAMP' })
+	date: Date;
 
-  @ManyToOne(() => User, (user) => user.loginLogs)
-  user: User;
+	@ManyToOne(() => User, (user) => user.loginLogs)
+	user: User;
 }

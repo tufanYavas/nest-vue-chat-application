@@ -1,0 +1,28 @@
+### Create a new rank
+POST http://localhost:3000/api/rank
+Content-Type: application/json
+
+{
+    "name": "Member",
+    "value": 1
+}
+
+
+### Get All
+GET http://localhost:3000/api/rank
+
+### Get One
+GET http://localhost:3000/api/rank/3
+
+
+### Update rank
+PATCH http://localhost:3000/api/rank/3
+Content-Type: application/json
+
+{
+    "name": "Rahatsız",
+    "value": 2
+}
+
+### Delete rank
+DELETE http://localhost:3000/api/rank/3

@@ -1,0 +1,30 @@
+### Create a new message
+POST http://localhost:3000/api/message
+Content-Type: application/json
+
+{
+    "content": "message 3",
+    "room": 1
+}
+
+
+### Get All
+GET http://localhost:3000/api/message
+
+### Get One
+GET http://localhost:3000/api/message/3
+
+
+### Update message
+PATCH http://localhost:3000/api/message/1
+Content-Type: application/json
+
+{
+    "name": "message 3",
+    "row": 1,
+    "active": true,
+    "default": true
+}
+
+### Delete message
+DELETE http://localhost:3000/api/message/3

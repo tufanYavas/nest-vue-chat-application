@@ -1,33 +1,8 @@
-### Create a new user
-POST http://localhost:3000/api/auth/signup
-content-type: application/json
-
-{
-  "username": "tufan",
-  "password": "12345",
-  "gender": true
-}
-
-### Sign in as an existing user
-POST http://localhost:3000/api/auth/signin
-content-type: application/json
-
-{
-  "email": "test@test.com",
-  "password": "12345"
-}
-
-### Get the currently signed in user
-GET http://localhost:3000/api/auth/whoami
-
-### Sign out
-POST http://localhost:3000/api/auth/signout
-
 ### Find a particular user with a given ID
 GET http://localhost:3000/api/auth/4
 
-### Find all users with a given email
-GET http://localhost:3000/api/auth?email=test1@test.com
+### Find all users with a given username
+GET http://localhost:3000/api/auth?username=test1@test.com
 
 ### Delete a user given id
 DELETE http://localhost:3000/api/auth/3
@@ -48,10 +23,10 @@ content-type: application/json
   "username": "tufan"
 }
 
-### Visitor login
-POST http://localhost:3000/api/auth/visitorLogin
+### Deneme
+POST http://localhost:3000/api/users/deneme
 content-type: application/json
 
 {
-  "username": "tufan2"
+  "username": "test3"
 }

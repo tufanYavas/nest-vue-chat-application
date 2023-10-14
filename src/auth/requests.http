@@ -1,0 +1,33 @@
+### Create a new user
+POST http://localhost:3000/api/auth/signup
+content-type: application/json
+
+{
+  "username": "test3",
+  "password": "123456",
+  "gender": true
+}
+
+### Sign in as an existing user
+POST http://localhost:3000/api/auth/signin
+content-type: application/json
+
+{
+  "username": "test3",
+  "password": "123456"
+}
+
+### Get the currently signed in user
+GET http://localhost:3000/api/auth/whoami
+
+### Sign out
+POST http://localhost:3000/api/auth/signout
+
+
+### Visitor login
+POST http://localhost:3000/api/auth/visitorLogin
+content-type: application/json
+
+{
+  "username": "tufan2"
+}
