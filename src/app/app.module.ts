@@ -5,17 +5,15 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../users/entities/user.entity';
-import { Permission } from '../users/entities/permission.entity';
-import { Preference } from '../users/entities/preference.entity';
 import { UsersModule } from '../users/users.module';
-import { LoginLog } from '../loginlog/loginlog.entity';
 import { AuthModule } from '../auth/auth.module';
-import { Status } from 'src/status/entities/status.entity';
-import { StatusModule } from 'src/status/status.module';
-import { RoomModule } from 'src/room/room.module';
-import { MessageModule } from 'src/message/message.module';
-import { ReportModule } from 'src/report/report.module';
+import { StatusModule } from '../status/status.module';
+import { RoomModule } from '../room/room.module';
+import { MessageModule } from '../message/message.module';
+import { ReportModule } from '../report/report.module';
+import { EventsModule } from '../events/events.module';
+import { WinstonLoggerModule } from '../logger/winston-logger.module';
+import { SeederModule } from '../seeder/seeder.module';
 
 @Module({
 	imports: [
@@ -28,10 +26,14 @@ import { ReportModule } from 'src/report/report.module';
 			useFactory: (config: ConfigService) => {
 				return {
 					type: 'sqlite',
-					database: config.get<string>('DB_NAME'),
-					synchronize: true,
-					entities: [User, Permission, Preference, LoginLog, Status],
+					host: config.get('DB_HOST'),
+					port: config.get('DB_PORT'),
+					username: config.get('DB_USER'),
+					password: config.get('DB_PASSWORD'),
+					// entities: [__dirname + '/../**/*.entity.{js,ts}'],
 					autoLoadEntities: true,
+					database: config.get('DB_NAME'),
+					synchronize: true,
 				};
 			},
 		}),
@@ -44,6 +46,9 @@ import { ReportModule } from 'src/report/report.module';
 		RoomModule,
 		MessageModule,
 		ReportModule,
+		EventsModule,
+		WinstonLoggerModule,
+		SeederModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

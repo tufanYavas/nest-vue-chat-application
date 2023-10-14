@@ -1,14 +1,17 @@
+### All users
+GET http://localhost:3000/api/users
+
 ### Find a particular user with a given ID
-GET http://localhost:3000/api/auth/4
+GET http://localhost:3000/api/users/1
 
 ### Find all users with a given username
-GET http://localhost:3000/api/auth?username=test1@test.com
+GET http://localhost:3000/api/users?username=test1@test.com
 
 ### Delete a user given id
-DELETE http://localhost:3000/api/auth/3
+DELETE http://localhost:3000/api/users/3
 
 ### Update a user
-PATCH http://localhost:3000/api/auth/1
+PATCH http://localhost:3000/api/users/1
 content-type: application/json
 
 {
@@ -16,7 +19,7 @@ content-type: application/json
 }
 
 ### Validate user
-POST http://localhost:3000/api/auth/validateUser
+POST http://localhost:3000/api/users/validateUser
 content-type: application/json
 
 {

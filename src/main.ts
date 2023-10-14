@@ -16,11 +16,14 @@ async function bootstrap() {
 
 	app.use(
 		cookieSession({
-			// name: 'session',
-			keys: ['key1', 'key2'], // Güvenlik için kullanılan anahtarlar. Gerçek projelerde daha karmaşık anahtarlar kullanmalısınız.
+			name: 'session',
+			keys: [
+				'hg1789yhz1jkn12jg1uy2hfg1vzsnb12bl12hj1gf2172fhjv31zfgx1',
+				'12htygjh12g1hv3h1d3rfy1f2fcg12d1v1nm b21v42ghfh21vb1nv31',
+			],
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 24 saat
 			// sameSite: 'none', // CORS için önemli
-			// secure: false, // HTTPS için
+			secure: false, // HTTPS için
 		}),
 	);
 

@@ -2,10 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
-import { LoginLogService } from 'src/loginlog/loginlog.service';
-import { RankService } from 'src/rank/rank.service';
+import { LoginLogService } from '../loginlog/loginlog.service';
+import { RankService } from '../rank/rank.service';
 import { Preference } from './entities/preference.entity';
 import { Permission } from './entities/permission.entity';
+import { DeepPartial } from 'typeorm/common/DeepPartial';
+import { StatusService } from '../status/status.service';
 
 @Injectable()
 export class UsersService {
@@ -18,6 +20,7 @@ export class UsersService {
 		private readonly permissionRepository: Repository<Permission>,
 		private readonly loginLogService: LoginLogService,
 		private readonly rankRepository: RankService,
+		private readonly statusRepository: StatusService,
 	) {}
 
 	getUserLogs(userId: number) {
@@ -28,24 +31,36 @@ export class UsersService {
 		return this.loginLogService.getAllLogs();
 	}
 
-	async create(username: string, password: string, gender: boolean) {
-		const user = this.usersRepository.create({
-			username,
-			password,
-			gender,
-		});
+	async createUserDontSave(options: DeepPartial<User>) {
+		const user = this.usersRepository.create(options);
 
-		const preference = this.preferenceRepository.create();
-		user.preference = preference;
-
-		const permission = this.permissionRepository.create();
+		const permission = await this.permissionRepository.save(
+			this.permissionRepository.create(),
+		);
 		user.permission = permission;
+
+		const preference = await this.preferenceRepository.save(
+			this.preferenceRepository.create(),
+		);
+		user.preference = preference;
 
 		const defaultRank = await this.rankRepository.findOne(
 			parseInt(process.env.DEFAULT_RANK_ID),
 		);
-
+		console.log({ defaultRank });
 		user.rank = defaultRank;
+
+		const defaultStatus = await this.statusRepository.findOne(
+			parseInt(process.env.DEFAULT_STATUS_ID),
+		);
+
+		user.status = defaultStatus;
+
+		return user;
+	}
+
+	async create(options: DeepPartial<User>) {
+		const user = await this.createUserDontSave(options);
 
 		return this.usersRepository.save(user);
 	}

@@ -10,9 +10,6 @@ export class LoginLog {
 	userId: number;
 
 	@Column()
-	isVisitor: boolean;
-
-	@Column()
 	username: string;
 
 	@Column()

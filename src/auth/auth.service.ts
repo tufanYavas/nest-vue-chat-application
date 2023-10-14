@@ -6,12 +6,29 @@ import {
 import { UsersService } from '../users/users.service';
 import { randomBytes, scrypt as _scrypt } from 'crypto';
 import { promisify } from 'util';
+import { parse } from 'cookie';
 
 const scrypt = promisify(_scrypt);
 
 @Injectable()
 export class AuthService {
 	constructor(private readonly usersService: UsersService) {}
+
+	async isValidSession(cookies: string): Promise<boolean> {
+		if (!cookies) return false;
+		const { session } = parse(cookies);
+		if (!session) return false;
+
+		const decodedSession = Buffer.from(session, 'base64').toString('utf8');
+		const parsedSession = JSON.parse(decodedSession);
+
+		if (!parsedSession.user) return false;
+
+		const user = await this.usersService.findOne(parsedSession.user.id);
+		if (!user || user.banned) return false;
+
+		return true;
+	}
 
 	async signup(username: string, password: string, gender: boolean) {
 		// See if email is in use
@@ -31,7 +48,11 @@ export class AuthService {
 		const result = salt + '.' + hash.toString('hex');
 
 		// Create a new user and save it
-		const user = await this.usersService.create(username, result, gender);
+		const user = await this.usersService.create({
+			username: username,
+			password: result,
+			gender: gender,
+		});
 
 		// return the user
 		return user;

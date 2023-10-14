@@ -98,11 +98,14 @@ export default defineComponent({
 	},
 	props: {},
 	methods: {
-		visitorLogin() {
+		guestLogin() {
 			axios
 				.post(
-					'/auth/visitorLogin',
-					{ username: this.username },
+					'/auth/guestLogin',
+					{
+						username: this.username,
+						gender: this.gender.toString() === '1' ? true : false,
+					},
 					{ withCredentials: true },
 				)
 				.then(() => {
@@ -158,14 +161,18 @@ export default defineComponent({
 							this.showPassword = true;
 							this.showGender = false;
 						} else {
-							this.visitorLogin();
+							this.guestLogin();
 						}
 					});
 			} else {
 				axios
 					.post(
-						'/auth/validateUser',
-						{ username: this.username },
+						'/users/validateUser',
+						{
+							username: this.username,
+							gender:
+								this.gender.toString() === '1' ? true : false,
+						},
 						{ withCredentials: true },
 					)
 					.then((response: any) => {
@@ -178,7 +185,7 @@ export default defineComponent({
 							this.showPassword = true;
 							this.showGender = false;
 						} else {
-							this.visitorLogin();
+							this.guestLogin();
 						}
 					});
 			}

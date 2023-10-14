@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer';
-import { RoomDto } from 'src/room/dto/room.dto';
-import { UserDto } from 'src/users/dtos/user.dto';
+import { RoomDto } from '../../room/dto/room.dto';
+import { UserDto } from '../../users/dtos/user.dto';
 
 export class MessageDto {
 	@Expose()

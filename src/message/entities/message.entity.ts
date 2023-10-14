@@ -1,5 +1,5 @@
-import { Room } from 'src/room/entities/room.entity';
-import { User } from 'src/users/entities/user.entity';
+import { Room } from '../../room/entities/room.entity';
+import { User } from '../../users/entities/user.entity';
 import {
 	Entity,
 	PrimaryGeneratedColumn,

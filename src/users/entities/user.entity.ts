@@ -14,11 +14,11 @@ import {
 } from 'typeorm';
 import { LoginLog } from '../../loginlog/loginlog.entity';
 import { Status } from '../../status/entities/status.entity';
-import { Rank } from 'src/rank/entities/rank.entity';
+import { Rank } from '../../rank/entities/rank.entity';
 import { Permission } from './permission.entity';
 import { Preference } from './preference.entity';
-import { Message } from 'src/message/entities/message.entity';
-import { Report } from 'src/report/entities/report.entity';
+import { Message } from '../../message/entities/message.entity';
+import { Report } from '../../report/entities/report.entity';
 
 @Entity()
 export class User {

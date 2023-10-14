@@ -13,7 +13,7 @@ import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './users.service';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { UserDto } from './dtos/user.dto';
-import { ValidateUserResponseType } from 'src/enums';
+import { ValidateUserResponseType } from '../enums';
 
 @Controller('users')
 @Serialize(UserDto)

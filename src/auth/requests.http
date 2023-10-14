@@ -3,7 +3,7 @@ POST http://localhost:3000/api/auth/signup
 content-type: application/json
 
 {
-  "username": "test3",
+  "username": "test5",
   "password": "123456",
   "gender": true
 }
@@ -29,5 +29,6 @@ POST http://localhost:3000/api/auth/visitorLogin
 content-type: application/json
 
 {
-  "username": "tufan2"
+  "username": "tufan2",
+  "gender": true
 }
