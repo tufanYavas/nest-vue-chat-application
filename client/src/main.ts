@@ -9,16 +9,13 @@ import router from './router';
 import { io } from 'socket.io-client';
 
 axios.defaults.baseURL = process.env.VUE_APP_BASE_URL;
+axios.defaults.withCredentials = true;
 
-import 'bootstrap/dist/css/bootstrap.css';
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+// import 'bootstrap/dist/css/bootstrap.css';
+// import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
-const socket = io('http://localhost:3131', {
-	withCredentials: true,
-});
-
-window.socket = socket;
+window.io = io;
 window.$ = window.jQuery = jQuery;
 window.Swal = Swal;
 

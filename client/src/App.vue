@@ -14,6 +14,7 @@ export default defineComponent({
 		Login,
 	},
 	created() {
+		window.$t = this.$t;
 		let script = document.createElement('script');
 		script.setAttribute('src', './plugins.js');
 		document.head.appendChild(script);
@@ -21,10 +22,4 @@ export default defineComponent({
 });
 </script>
 
-<style>
-@import 'assets/css/animate.css';
-@import 'assets/css/ionicons.min';
-@import 'assets/css/login.css';
-@import 'assets/css/magnific-popup.css';
-@import 'assets/css/style.css';
-</style>
+<style></style>

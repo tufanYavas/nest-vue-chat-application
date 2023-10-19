@@ -1,13 +1,10 @@
-import { User } from '../user.entity';
+import { User } from '../users/entities/user.entity';
 
-declare global {
-	namespace Express {
-		interface Request {
-			// currentUser?: User;
-			session?: {
-				user?: User;
-				[key: string]: any;
-			};
-		}
+declare namespace Express {
+	export interface Request {
+		session?: {
+			user?: User;
+			[key: string]: any;
+		};
 	}
 }

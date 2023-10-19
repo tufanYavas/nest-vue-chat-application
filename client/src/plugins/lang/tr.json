@@ -1,3 +1,9 @@
 {
-    "language": "tr"
+    "Your Status": "Durumunuz",
+    "Loading": "Yükleniyor",
+    "Who is?": "Bu kim?",
+    "IP Adress": "IP Adresi",
+    "Error": "Hata",
+    "Password must be at least 6 characters long.": "Şifre en az 6 karakter uzunluğunda olmalı.",
+    "Warning": "Uyarı"
 }

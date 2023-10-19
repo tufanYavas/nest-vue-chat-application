@@ -1,7 +1,4 @@
 import {
-	AfterInsert,
-	AfterRemove,
-	AfterUpdate,
 	Entity,
 	Column,
 	PrimaryGeneratedColumn,
@@ -11,14 +8,16 @@ import {
 	JoinTable,
 	OneToMany,
 	ManyToOne,
+	BeforeInsert,
 } from 'typeorm';
-import { LoginLog } from '../../loginlog/loginlog.entity';
+import { LoginLog } from '../../login-log/login-log.entity';
 import { Status } from '../../status/entities/status.entity';
 import { Rank } from '../../rank/entities/rank.entity';
 import { Permission } from './permission.entity';
 import { Preference } from './preference.entity';
 import { Message } from '../../message/entities/message.entity';
 import { Report } from '../../report/entities/report.entity';
+import { hashPassword } from '../../utils';
 
 @Entity()
 export class User {
@@ -62,28 +61,38 @@ export class User {
 	//#endregion
 
 	//#region Relationships
-	@OneToMany(() => LoginLog, (loginLog) => loginLog.user)
+	@OneToMany(() => LoginLog, (loginLog) => loginLog.user, {
+		cascade: ['update'],
+	})
 	loginLogs: LoginLog[];
 
-	@OneToOne(() => Permission)
+	@OneToOne(() => Permission, {
+		cascade: ['update'],
+	})
 	@JoinColumn()
 	permission: Permission;
 
-	@ManyToMany(() => User)
+	@ManyToMany(() => User, {
+		cascade: ['update'],
+	})
 	@JoinTable()
 	bannedUsers: User[];
 
 	@OneToOne(() => Preference, (preference) => preference.user, {
-		cascade: true,
+		cascade: ['update'],
 	})
 	@JoinColumn()
 	preference: Preference;
 
-	@ManyToOne(() => Status, (status) => status.users)
+	@ManyToOne(() => Status, (status) => status.users, {
+		cascade: ['update'],
+	})
 	@JoinColumn({ name: 'statusId' })
 	status: Status;
 
-	@ManyToOne(() => Rank, (rank) => rank.users)
+	@ManyToOne(() => Rank, (rank) => rank.users, {
+		cascade: ['update'],
+	})
 	@JoinColumn({ name: 'rankId' })
 	rank: Rank;
 
@@ -99,18 +108,23 @@ export class User {
 
 	//#endregion
 
-	@AfterInsert()
-	logInsert() {
-		console.log('Inserted User with id', this.id);
+	@BeforeInsert()
+	async hashPassword() {
+		this.password = await hashPassword(this.password);
 	}
 
-	@AfterUpdate()
-	logUpdate() {
-		console.log('Updated User with id', this.id);
-	}
+	// @AfterInsert()
+	// logInsert() {
+	// 	console.log('Inserted User with id', this.id);
+	// }
 
-	@AfterRemove()
-	logRemove() {
-		console.log('Removed User with id', this.id);
-	}
+	// @AfterUpdate()
+	// logUpdate() {
+	// 	console.log('Updated User with id', this.id);
+	// }
+
+	// @AfterRemove()
+	// logRemove() {
+	// 	console.log('Removed User with id', this.id);
+	// }
 }

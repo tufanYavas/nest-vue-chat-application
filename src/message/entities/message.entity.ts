@@ -1,12 +1,6 @@
 import { Room } from '../../room/entities/room.entity';
 import { User } from '../../users/entities/user.entity';
-import {
-	Entity,
-	PrimaryGeneratedColumn,
-	Column,
-	ManyToOne,
-	JoinColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity()
 export class Message {
@@ -20,12 +14,16 @@ export class Message {
 	created: Date;
 
 	// User relationship
-	@ManyToOne(() => User, (user) => user.messages)
+	@ManyToOne(() => User, (user) => user.messages, {
+		cascade: ['insert', 'update', 'remove'],
+	})
 	@JoinColumn({ name: 'senderId' })
 	sender: User;
 
 	// Room relationship
-	@ManyToOne(() => Room, (room) => room.messages)
+	@ManyToOne(() => Room, (room) => room.messages, {
+		cascade: ['insert', 'update', 'remove'],
+	})
 	@JoinColumn({ name: 'roomId' })
 	room: Room;
 }

@@ -16,9 +16,6 @@ export class Permission {
 	canEditThemeSettings: boolean;
 
 	@Column({ default: false })
-	canEditVpnSettings: boolean;
-
-	@Column({ default: false })
 	canResetServer: boolean;
 
 	@Column({ default: false })
@@ -38,6 +35,9 @@ export class Permission {
 
 	@Column({ default: false })
 	canSeeComplaints: boolean;
+
+	@Column({ default: false })
+	canSeeIpOfUsers: boolean;
 
 	@Column({ default: false })
 	canSeeIpBans: boolean;

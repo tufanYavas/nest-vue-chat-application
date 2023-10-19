@@ -7,7 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Preference } from '../users/entities/preference.entity';
 import { Permission } from '../users/entities/permission.entity';
-import { LoginlogModule } from '../loginlog/loginlog.module';
+import { LoginlogModule } from '../login-log/login-log.module';
 import { RankModule } from '../rank/rank.module';
 import { StatusModule } from '../status/status.module';
 
@@ -19,12 +19,7 @@ import { StatusModule } from '../status/status.module';
 			useClass: CurrentUserInterceptor,
 		},
 	],
-	imports: [
-		TypeOrmModule.forFeature([User, Preference, Permission]),
-		LoginlogModule,
-		RankModule,
-		StatusModule,
-	],
+	imports: [TypeOrmModule.forFeature([User, Preference, Permission]), LoginlogModule, RankModule, StatusModule],
 	exports: [UsersService],
 	controllers: [UsersController],
 })

@@ -1,13 +1,4 @@
-import {
-	Controller,
-	Get,
-	Post,
-	Body,
-	Param,
-	Delete,
-	UseGuards,
-	Session,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Session } from '@nestjs/common';
 import { ReportService } from './report.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { AuthGuard } from '../guards/auth.guard';
@@ -18,10 +9,7 @@ export class ReportController {
 
 	@UseGuards(AuthGuard)
 	@Post()
-	create(
-		@Body() createReportDto: CreateReportDto,
-		@Session() session: Express.Request['session'],
-	) {
+	create(@Body() createReportDto: CreateReportDto, @Session() session: Express.Request['session']) {
 		const sender = session.user;
 		return this.reportService.create(sender, createReportDto);
 	}

@@ -3,6 +3,7 @@ import { UsersService } from '../users/users.service';
 import { RankService } from '../rank/rank.service';
 import { StatusService } from '../status/status.service';
 import { RoomService } from '../room/room.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class SeederService {
@@ -11,14 +12,23 @@ export class SeederService {
 		private readonly rankService: RankService,
 		private readonly statusService: StatusService,
 		private readonly roomService: RoomService,
+		private readonly settingsService: SettingsService,
 	) {}
 
 	async run() {
+		await this.seedSettings();
 		await this.seedRanks();
 		await this.seedStatus();
 		await this.seedUsers();
 		await this.seedRooms();
 		console.log('All data seeded');
+	}
+
+	async seedSettings() {
+		await this.settingsService.create({
+			id: 1,
+		});
+		console.log('Settings seeded');
 	}
 
 	async seedStatus() {
@@ -40,19 +50,26 @@ export class SeederService {
 	}
 
 	async seedUsers() {
-		await Promise.all([
-			this.usersService.create({
-				id: -1,
-				username: 'guest',
-				gender: true,
-				password: '',
-			}),
-			this.usersService.create({
-				username: 'root',
-				gender: true,
-				password: '123456',
-			}),
-		]);
+		const rootUser = await this.usersService.create({
+			username: 'root',
+			gender: true,
+			password: '123456',
+		});
+		for (const key in rootUser.permission) {
+			if (key.startsWith('can')) {
+				rootUser.permission[key] = true;
+			}
+		}
+		rootUser.rank = await this.rankService.findOne(7);
+		await this.usersService.save([rootUser]);
+
+		await this.usersService.create({
+			id: -1,
+			username: 'guest',
+			gender: true,
+			password: '',
+		});
+
 		console.log('Users seeded');
 	}
 

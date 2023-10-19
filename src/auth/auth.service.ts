@@ -1,60 +1,41 @@
-import {
-	Injectable,
-	BadRequestException,
-	NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { randomBytes, scrypt as _scrypt } from 'crypto';
-import { promisify } from 'util';
 import { parse } from 'cookie';
-
-const scrypt = promisify(_scrypt);
+import { User } from '../users/entities/user.entity';
+import { comparePasswords } from 'src/utils';
 
 @Injectable()
 export class AuthService {
 	constructor(private readonly usersService: UsersService) {}
 
-	async isValidSession(cookies: string): Promise<boolean> {
-		if (!cookies) return false;
+	async validateUserFromCookies(cookies: string): Promise<User> {
+		if (!cookies) return null;
 		const { session } = parse(cookies);
-		if (!session) return false;
+		if (!session) return null;
 
 		const decodedSession = Buffer.from(session, 'base64').toString('utf8');
 		const parsedSession = JSON.parse(decodedSession);
 
-		if (!parsedSession.user) return false;
+		if (!parsedSession.user) return null;
 
-		const user = await this.usersService.findOne(parsedSession.user.id);
-		if (!user || user.banned) return false;
+		const user = await this.usersService.findOneWithAllRelations({ id: parsedSession.user.id });
+		if (!user || user.banned) return null;
 
-		return true;
+		return user;
 	}
 
 	async signup(username: string, password: string, gender: boolean) {
-		// See if email is in use
 		const users = await this.usersService.find(username);
 		if (users.length) {
 			throw new BadRequestException('Username in use');
 		}
 
-		// Hash the users password
-		// Generate a salt
-		const salt = randomBytes(8).toString('hex');
-
-		// Hash the salt and the password together
-		const hash = (await scrypt(password, salt, 32)) as Buffer;
-
-		// Join the hashed result and the salt together
-		const result = salt + '.' + hash.toString('hex');
-
-		// Create a new user and save it
 		const user = await this.usersService.create({
-			username: username,
-			password: result,
-			gender: gender,
+			username,
+			password,
+			gender,
 		});
 
-		// return the user
 		return user;
 	}
 
@@ -64,14 +45,8 @@ export class AuthService {
 			throw new NotFoundException('User not found');
 		}
 
-		const [salt, storedHash] = user.password.split('.');
+		const isMatch = await comparePasswords(user.password, password);
 
-		const hash = (await scrypt(password, salt, 32)) as Buffer;
-
-		if (storedHash !== hash.toString('hex')) {
-			throw new BadRequestException('Bad password');
-		}
-
-		return user;
+		if (isMatch) return user;
 	}
 }

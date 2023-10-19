@@ -1,13 +1,4 @@
-import {
-	Controller,
-	Get,
-	Post,
-	Body,
-	Param,
-	Delete,
-	Session,
-	UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Session, UseGuards } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Serialize } from '../interceptors/serialize.interceptor';
@@ -21,10 +12,7 @@ export class MessageController {
 
 	@UseGuards(AuthGuard)
 	@Post()
-	create(
-		@Body() createMessageDto: CreateMessageDto,
-		@Session() session: Express.Request['session'],
-	) {
+	create(@Body() createMessageDto: CreateMessageDto, @Session() session: Express.Request['session']) {
 		const sender = session.user;
 		return this.messageService.create(sender, createMessageDto);
 	}

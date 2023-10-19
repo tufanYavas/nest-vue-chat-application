@@ -7,10 +7,13 @@ import {
 	Session,
 	UseGuards,
 	Req,
+	Res,
+	HttpStatus,
+	ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '../guards/auth.guard';
-import { LoginLogService } from '../loginlog/loginlog.service';
-import { Request } from 'express';
+import { LoginLogService } from '../login-log/login-log.service';
+import { Request, Response } from 'express';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/create-user.dto';
@@ -18,17 +21,7 @@ import { LoginGuestDto } from '../users/dtos/login-guest.dto';
 import { LoginUserDto } from '../users/dtos/login-user.dto';
 import { UserDto } from '../users/dtos/user.dto';
 import { Serialize } from '../interceptors/serialize.interceptor';
-import { User } from '../users/entities/user.entity';
-
-// eslint-disable-next-line @typescript-eslint/no-namespace, @typescript-eslint/no-unused-vars
-declare namespace Express {
-	export interface Request {
-		session?: {
-			user?: User;
-			[key: string]: any;
-		};
-	}
-}
+import { SettingsService } from 'src/settings/settings.service';
 
 @Controller('auth')
 @Serialize(UserDto)
@@ -37,31 +30,40 @@ export class AuthController {
 		private readonly usersService: UsersService,
 		private readonly authService: AuthService,
 		private readonly loginLogService: LoginLogService,
+		private readonly settingsService: SettingsService,
 	) {}
 
 	@Get('/whoami')
 	@UseGuards(AuthGuard)
-	whoAmI(@Session() session) {
+	whoAmI(@Session() session: Request['session']) {
 		return session.user;
 	}
 
+	@Post('/route')
+	route(@Session() session: Request['session'], @Res() res: Response) {
+		if (session.user && !session.user.banned) {
+			res.status(HttpStatus.OK).send();
+		} else {
+			res.status(HttpStatus.BAD_REQUEST).send();
+		}
+	}
+
 	@Post('/signout')
-	signOut(@Session() session: Request['session']) {
-		console.log(session.user);
+	signOut(@Session() session: Request['session'], @Res() res: Response) {
 		session.user = null;
+		res.clearCookie('session', { path: '/' });
+		res.clearCookie('session.sig', { path: '/' });
+		res.clearCookie('io', { path: '/' });
+		res.send();
 	}
 
 	@Post('/signup')
-	async createUser(
-		@Body() body: CreateUserDto,
-		@Session() session: Request['session'],
-		@Req() req: Request,
-	) {
-		const user = await this.authService.signup(
-			body.username,
-			body.password,
-			body.gender,
-		);
+	async createUser(@Body() body: CreateUserDto, @Session() session: Request['session'], @Req() req: Request) {
+		const settings = await this.settingsService.getSettings();
+		if (!settings.newMemberActive) {
+			throw new ForbiddenException('New memberships are disabled.');
+		}
+		const user = await this.authService.signup(body.username, body.password, body.gender);
 
 		await this.loginLogService.createLog(user, req);
 		session.user = user;
@@ -69,11 +71,11 @@ export class AuthController {
 	}
 
 	@Post('/guestLogin')
-	async guestLogin(
-		@Body() body: LoginGuestDto,
-		@Session() session: Request['session'],
-		@Req() req: Request,
-	) {
+	async guestLogin(@Body() body: LoginGuestDto, @Session() session: Request['session'], @Req() req: Request) {
+		const settings = await this.settingsService.getSettings();
+		if (!settings.guestLoginActive) {
+			throw new ForbiddenException('Guest login disabled.');
+		}
 		const matchUser = await this.usersService.findOneBy({
 			username: body.username,
 		});
@@ -93,15 +95,8 @@ export class AuthController {
 	}
 
 	@Post('/signin')
-	async signin(
-		@Body() body: LoginUserDto,
-		@Session() session: Request['session'],
-		@Req() req: Request,
-	) {
-		const user = await this.authService.signin(
-			body.username,
-			body.password,
-		);
+	async signin(@Body() body: LoginUserDto, @Session() session: Request['session'], @Req() req: Request) {
+		const user = await this.authService.signin(body.username, body.password);
 
 		await this.loginLogService.createLog(user, req);
 		session.user = user;

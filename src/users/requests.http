@@ -1,17 +1,20 @@
-### All users
-GET http://localhost:3000/api/users
+
+GET http://localhost:3000/api/user/me
+
+### All user
+GET http://localhost:3000/api/user
 
 ### Find a particular user with a given ID
-GET http://localhost:3000/api/users/1
+GET http://localhost:3000/api/user/1
 
-### Find all users with a given username
-GET http://localhost:3000/api/users?username=test1@test.com
+### Find all user with a given username
+GET http://localhost:3000/api/user?username=test1@test.com
 
 ### Delete a user given id
-DELETE http://localhost:3000/api/users/3
+DELETE http://localhost:3000/api/user/3
 
 ### Update a user
-PATCH http://localhost:3000/api/users/1
+PATCH http://localhost:3000/api/user/1
 content-type: application/json
 
 {
@@ -19,17 +22,31 @@ content-type: application/json
 }
 
 ### Validate user
-POST http://localhost:3000/api/users/validateUser
+POST http://localhost:3000/api/user/validateUser
 content-type: application/json
 
 {
   "username": "tufan"
 }
 
-### Deneme
-POST http://localhost:3000/api/users/deneme
+### Set Status
+POST http://localhost:3000/api/user/setStatus
 content-type: application/json
 
 {
-  "username": "test3"
+  "id": "1"
+}
+
+### Update Profile
+PATCH http://localhost:3000/api/user/updateProfile
+content-type: application/json
+
+{
+  "about": "aboutme",
+  "oldPassword": "123456",
+  "newPassword": "1234567",
+  "allowPrivateMessagesFromOthers": false,
+  "allowVoiceCallsFromOthers": false,
+  "allowVideoCallsFromOthers": false,
+  "notificationEnabled": false
 }

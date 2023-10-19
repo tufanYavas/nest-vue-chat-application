@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
     "name": "Room 3",
-    "row": 1,
+    "row": 0,
     "active": true,
     "default": true
 }
@@ -18,14 +18,15 @@ GET http://localhost:3000/api/room/3
 
 
 ### Update room
-PATCH http://localhost:3000/api/room/1
+PATCH http://localhost:3000/api/room/4
 Content-Type: application/json
 
 {
     "name": "Room 3",
     "row": 1,
     "active": true,
-    "default": true
+    "default": true,
+    "bg": "https://www.w3schools.com/tags/img_girl.jpg"
 }
 
 ### Delete room

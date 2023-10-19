@@ -3,13 +3,13 @@ import * as en from './en.json';
 import * as tr from './tr.json';
 
 const langs = {
-  en,
-  tr,
+	en,
+	tr,
 };
 
 export default createI18n({
-  legacy: false,
-  locale: 'en',
-  globalInjection: true,
-  messages: langs,
+	legacy: false,
+	locale: 'en',
+	globalInjection: true,
+	messages: langs,
 });

@@ -1,4 +1,8 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { RankDto } from '../../rank/dto/rank.dto';
+import { PermissionDto } from './permission.dto';
+import { PreferenceDto } from './preference.dto';
+import { StatusDto } from '../../status/dto/status.dto';
 
 export class UserDto {
 	@Expose()
@@ -14,9 +18,6 @@ export class UserDto {
 	profileImage?: string;
 
 	@Expose()
-	status: number;
-
-	@Expose()
 	type: number;
 
 	@Expose()
@@ -30,4 +31,24 @@ export class UserDto {
 
 	@Expose()
 	created: Date;
+
+	// status
+	@Expose()
+	name: Date;
+
+	@Expose()
+	@Type(() => PermissionDto)
+	permission: PermissionDto;
+
+	@Expose()
+	@Type(() => PreferenceDto)
+	preference: PreferenceDto;
+
+	@Expose()
+	@Type(() => StatusDto)
+	status: StatusDto;
+
+	@Expose()
+	@Type(() => RankDto)
+	rank: RankDto;
 }
