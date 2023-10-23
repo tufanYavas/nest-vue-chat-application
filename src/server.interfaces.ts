@@ -1,3 +1,6 @@
+export interface IUserForClient extends IUser {
+	room: IRoom;
+}
 export interface IRank {
 	name: string;
 	value: number;
@@ -45,7 +48,7 @@ export interface IUser {
 	banned: boolean;
 	preventMic: boolean;
 	preventCam: boolean;
-	created: string;
+	created: Date;
 	permission: IPermission;
 	preference: IPreference;
 	status: IStatus;

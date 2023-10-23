@@ -38,7 +38,7 @@ import { SeederModule } from '../seeder/seeder.module';
 			},
 		}),
 		ServeStaticModule.forRoot({
-			rootPath: join(__dirname, '..', 'client/dist'),
+			rootPath: join(process.cwd(), 'client/dist'),
 		}),
 		UsersModule,
 		AuthModule,

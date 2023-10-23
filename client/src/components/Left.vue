@@ -6,7 +6,7 @@
 					<li
 						id="showChat"
 						@click="showChat"
-						class="md-hidden m-active"
+						class="md-hidden"
 						:class="{
 							'm-active': activeTab === 'CHAT' && isMobile,
 						}"
@@ -33,7 +33,10 @@
 							'm-active': activeTab === 'ALLUSERS' && isMobile,
 						}"
 					>
-						<i class="fa fa-users"></i> Tüm Kişiler (<span style="cursor: pointer" id="whole">0</span>)
+						<i class="fa fa-users"></i> Tüm Kişiler (<span style="cursor: pointer" id="whole">{{
+							allUsers.length
+						}}</span
+						>)
 					</li>
 					<li
 						id="showUsers"
@@ -43,22 +46,20 @@
 							'm-active': activeTab === 'USERS' && isMobile,
 						}"
 					>
-						<i class="fa fa-users"></i> Oda (<span style="cursor: pointer" id="wholeroom">0</span>)
+						<i class="fa fa-users"></i> Oda (<span style="cursor: pointer" id="wholeroom">{{
+							allUsersLength
+						}}</span
+						>)
 					</li>
 				</ul>
 			</div>
 
-			<transition-group name="slide-fade">
+			<transition-group name="slide">
 				<div id="roomlist" key="0" v-show="isRoomListVisible">
 					<i style="margin: 0 0 0 10px" class="fa fa-search"></i
 					><input class="search" id="roomsearch" type="text" placeholder="Oda ara..." />
 
-					<div
-						v-for="room in rooms"
-						:key="room.id"
-						class="room"
-						:class="{ active: room.id == currentRoom.id }"
-					>
+					<div v-for="room in rooms" :key="room.id" class="room" :class="{ active: room.id == user.room.id }">
 						<div class="name"><i class="fa fa-comment-o" aria-hidden="true"></i> {{ room.name }}</div>
 						<div class="online">
 							<i class="fa fa-lock"></i>
@@ -78,13 +79,18 @@
 					/>
 
 					<div
-						v-for="u in usersInRoom"
+						v-for="u in allUsers"
 						:key="u.username"
-						@click="$emit('showProfileinfo', u.participantId)"
+						@click="$emit('showProfileinfo', u.clientId)"
 						class="user"
 					>
 						<div class="image">
-							<img style="cursor: pointer" :src="u.profileImage" height="50" :alt="u.username" />
+							<img
+								style="cursor: pointer"
+								:src="`uploads/images/${u.profileImage}`"
+								height="50"
+								:alt="u.username"
+							/>
 						</div>
 						<div class="info">
 							<div class="name">{{ u.username }}</div>
@@ -117,9 +123,9 @@
 					><input class="search" id="userAllsearch" type="text" placeholder="Tüm kişilerde ara" />
 
 					<div
-						v-for="u in usersInAllRooms"
+						v-for="u in allUsers"
 						:key="u.username"
-						@click="$emit('showProfileinfo', u.participantId)"
+						@click="$emit('showProfileinfo', u.clientId)"
 						class="user"
 					>
 						<div class="image">
@@ -203,9 +209,7 @@ import { swalServerError } from '@/utils';
 import axios from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { defineComponent } from 'vue';
-import { IRoom, IUser } from '@/interfaces/server.interfaces';
-import { IUserForList } from '@/views/chat/Chat.vue';
-import { Connection } from '@/rtc/connection';
+import { IRoom, IUser, IUserForClient } from '@/interfaces/server.interfaces';
 
 export default defineComponent({
 	name: 'Left',
@@ -228,19 +232,11 @@ export default defineComponent({
 	},
 	props: {
 		user: {
-			type: Object as () => IUser,
+			type: Object as () => IUserForClient,
 			required: true,
 		},
-		usersInRoom: {
-			type: Object as () => IUserForList[],
-			required: true,
-		},
-		usersInAllRooms: {
-			type: Object as () => IUserForList[],
-			required: true,
-		},
-		currentRoom: {
-			type: Object as () => IRoom,
+		allUsers: {
+			type: Object as () => IUserForClient[],
 			required: true,
 		},
 		isRightVisible: {
@@ -248,17 +244,9 @@ export default defineComponent({
 			required: true,
 		},
 	},
-	emits: [
-		'update:user',
-		'update:usersInRoom',
-		'update:usersInAllRooms',
-		'update:currentRoom',
-		'update:isRightVisible',
-		'showProfileinfo',
-	],
+	emits: ['update:user', 'update:allUsers', 'update:isRightVisible', 'showProfileinfo'],
 	methods: {
 		showRooms() {
-			console.log(JSON.stringify(this.rooms, null, 4));
 			this.activeTab = 'ROOMS';
 			this.isUserListVisible = false;
 			this.isAllUserListVisible = false;
@@ -305,8 +293,7 @@ export default defineComponent({
 		window.removeEventListener('resize', this.updateWidth);
 	},
 	created() {
-		this.rooms = Connection.rooms;
-		console.log(this.currentRoom);
+		console.log(this.user);
 	},
 	computed: {
 		isMobile(): boolean {
@@ -320,17 +307,26 @@ export default defineComponent({
 			}
 			return '';
 		},
+		allUsersLength(): number {
+			return this.allUsers.filter((u) => u.room.id == this.user.room.id).length;
+		},
+	},
+	watch: {
+		isMobile(newVal: boolean) {
+			if (!newVal) {
+				this.$emit('update:isRightVisible', true);
+				this.showUsers();
+			}
+		},
 	},
 });
 </script>
 
 <style>
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-	transition: all 0.3s ease;
+.slide-enter-active {
+	animation: slideInRight 0.3s;
 }
-.slide-fade-enter, .slide-fade-leave-to /* .slide-fade-leave-active in <2.1.8 */ {
-	transform: translateY(10px);
-	opacity: 0;
+.slide-leave-active {
+	animation: slideOutRight 0s;
 }
 </style>

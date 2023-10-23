@@ -1,35 +1,19 @@
-import { Inject, LoggerService } from '@nestjs/common';
 import {
 	ConnectedSocket,
 	MessageBody,
 	OnGatewayConnection,
 	OnGatewayDisconnect,
-	OnGatewayInit,
 	SubscribeMessage,
 	WebSocketGateway,
 	WebSocketServer,
 	WsResponse,
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
-import { AuthService } from '../auth/auth.service';
 import { SocketEventType } from './socket.enum';
-import { LoginLogService } from '../login-log/login-log.service';
-import * as RTCMultiConnectionServer from 'rtcmulticonnection-server';
-import { IUser } from '../server.interfaces';
-import { SettingsService } from '../settings/settings.service';
-import { User } from 'src/users/entities/user.entity';
+import { ISendMessage, SocketWithData } from './interfaces';
+import { SocketService } from './socket.service';
+import { IUserForClient } from 'src/server.interfaces';
 
-interface SocketWithUser extends Socket {
-	data: {
-		user: User;
-		participantId: string;
-	};
-}
-
-interface User4Socket extends IUser {
-	ip: string;
-	participantId: string;
-}
 @WebSocketGateway(3131, {
 	cors: {
 		origin: 'http://localhost:8081',
@@ -37,70 +21,55 @@ interface User4Socket extends IUser {
 		credentials: true,
 	},
 })
-export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-	constructor(
-		@Inject('LoggerService') private readonly logger: LoggerService,
-		private readonly authService: AuthService,
-		private readonly loginLogService: LoginLogService,
-		private readonly settingsService: SettingsService,
-	) {}
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+	constructor(private socketService: SocketService) {
+		this.socketService.server = this.server;
+	}
+
 	@WebSocketServer()
 	server: Server;
-	users: User4Socket[] = [];
 
 	@SubscribeMessage(SocketEventType.GET_IP)
-	async getIp(@ConnectedSocket() client: SocketWithUser, @MessageBody() data: any): Promise<WsResponse> {
-		const user = client.data.user;
-
-		if (!user.permission.canSeeIpOfUsers) return;
-		const ip = await this.loginLogService.getLatestLoginIpByUsername(data);
-		if (ip) {
-			return {
-				event: SocketEventType.GET_IP,
-				data: await this.loginLogService.getLatestLoginIpByUsername(data),
-			};
-		}
+	async getIp(@ConnectedSocket() client: SocketWithData, @MessageBody() data: any): Promise<WsResponse> {
+		return this.socketService.getIp(client, data);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	afterInit(server: Server) {
-		this.logger.log('WebSocket Initialized!');
+	@SubscribeMessage('joinRoom')
+	handleJoinRoom(client: Socket, room: string): void {
+		client.join(room);
 	}
 
-	async handleConnection(client: Socket) {
-		this.logger.log(`Client connected: ${client.id}`);
-		const cookies = client.handshake.headers.cookie;
-
-		const user = await this.authService.validateUserFromCookies(cookies);
-		if (!user) {
-			this.logger.log(`client cookies is not valid`);
-			return client.disconnect();
-		}
-
-		const participantId = client.handshake.query.userid as string;
-		client.data.user = user;
-		client.data.participantId = participantId;
-
-		const ip = client.handshake.address;
-
-		const settings = await this.settingsService.getSettings();
-		const matchedUser = this.users.find((u) => u.ip == ip);
-
-		if (settings.doubleLoginActive || !matchedUser) {
-			this.users.push({
-				...(user as unknown as IUser),
-				ip,
-				participantId: client.id,
-			});
-			RTCMultiConnectionServer.addSocket(client);
-		} else {
-			client.emit(SocketEventType.DOUBLE_LOGIN);
-			this.logger.log(`${ip} double login attempt`);
-		}
+	@SubscribeMessage('leaveRoom')
+	handleLeaveRoom(client: Socket, room: string): void {
+		client.leave(room);
 	}
 
-	handleDisconnect(client: SocketWithUser) {
-		this.logger.log(`Client disconnected: ${client.id}`);
-		this.users = this.users.filter((user) => user.participantId !== client.id);
+	@SubscribeMessage('sendMessageToRoom')
+	handleSendMessageToRoom(client: Socket, payload: { room: string; message: string }): void {
+		this.server.to(payload.room).emit('newMessage', payload.message);
+	}
+
+	@SubscribeMessage('sendMessageToAll')
+	handleSendMessageToAll(client: Socket, message: string): void {
+		this.server.emit('newMessage', message);
+	}
+
+	@SubscribeMessage(SocketEventType.SEND_MESSAGE)
+	sendMessage(@ConnectedSocket() client: SocketWithData, @MessageBody() data: ISendMessage) {
+		return this.socketService.sendMessage(client, data);
+	}
+
+	@SubscribeMessage(SocketEventType.GET_ALL_USERS)
+	getAllUsers(): WsResponse<IUserForClient[]> {
+		return this.socketService.getAllUsers();
+	}
+
+	async handleConnection(client: SocketWithData) {
+		if (!this.socketService.server) this.socketService.server = this.server;
+		this.socketService.handleConnection(client);
+	}
+
+	handleDisconnect(client: SocketWithData) {
+		this.socketService.handleDisconnect(client);
 	}
 }

@@ -6,9 +6,9 @@
 					<img :src="settings.logo" width="110" height="50" alt="Logo" />
 				</div>
 
-				<Status v-if="user" :currentStatus="user.status.name" />
+				<Status v-if="user" v-model:currentStatus="user.status" />
 
-				<Settings v-if="user" ref="settingsComponent" :user="user" @resetChat="messages.length = 0" />
+				<Settings v-if="user" ref="settingsComponent" v-model:user="user" @resetChat="messages.length = 0" />
 
 				<div onclick="showPrivateMessages();" id="messagebox" class="pmboxmobile">
 					<i class="fa fa-comments-o" aria-hidden="true"></i>
@@ -42,22 +42,20 @@
 			</div>
 
 			<Left
-				v-if="connection && user"
+				v-if="user"
 				v-model:user="user"
-				v-model:currentRoom="connection.extra.room"
-				v-model:usersInRoom="usersInRoom"
-				v-model:usersInAllRooms="usersInAllRooms"
+				v-model:allUsers="allUsers"
 				v-model:isRightVisible="isRightVisible"
 				@show-profileinfo="showProfileinfo"
 			/>
 
-			<transition name="slide-fade">
+			<transition name="slide">
 				<div
 					id="right"
 					v-show="isRightVisible"
 					class="transparentbackground"
 					:style="{
-						'background-image': connection?.extra.room.bg ? `url(${connection?.extra.room.bg})` : 'none',
+						'background-image': !user ? 'none' : user.room.bg ? `url(${user.room.bg})` : 'none',
 					}"
 				>
 					<div id="room">
@@ -70,28 +68,51 @@
 					<div id="chat" ref="chatContainer">
 						<div v-for="(message, id) in messages" :key="id">
 							<div
-								v-if="message.data.type == 'SYSTEM_MESSAGE' || message.data.type == 'EVENT'"
+								v-if="
+									message.type == 'SYSTEM_MESSAGE' ||
+									(message.type === 'ROOM_EVENT' && message.user.room.id === user?.room.id) ||
+									message.type === 'ALL_EVENT'
+								"
 								class="message"
 							>
 								<div class="centered-content">
 									<div class="content">
 										<div class="inner">
 											<span class="bold">
-												{{ message.data.text }}
+												{{ message.text }}
 												<a
 													v-if="
-														connection &&
-														message.extra.user.rank.value <
-															connection.extra.user.rank.value &&
-														connection.extra.user.permission.canSeeIpOfUsers
+														user &&
+														message.user.rank.value < user.rank.value &&
+														user.permission.canSeeIpOfUsers
 													"
 													style="color: blue"
-													@click="whoIs(message.extra.user.username)"
+													@click="whoIs(message.user.username)"
 												>
 													{{ $t('Who is?') }}
 												</a>
 											</span>
 										</div>
+									</div>
+								</div>
+							</div>
+							<div
+								v-if="message.type === 'ALL_MESSAGE' || message.type === 'ROOM_MESSAGE'"
+								class="message"
+							>
+								<div class="image">
+									<img
+										:src="`uploads/images/${message.user.profileImage}`"
+										height="32"
+										:alt="message.user.username"
+									/>
+								</div>
+								<div class="content">
+									<div style="font-size: 10pt" class="inner">
+										<span class="mmessage" style="word-break: break-all"
+											><span style="font-weight: 600">{{ message.user.username }}:</span
+											><span style="color: #000000">{{ message.text }}</span></span
+										>
 									</div>
 								</div>
 							</div>
@@ -102,9 +123,11 @@
 						<div class="inner">
 							<input
 								id="messageinput"
+								@keyup.enter="sendMessage"
 								autocomplete="off"
 								type="text"
 								placeholder="&#xf27b; Mesajınızı buraya yazın..."
+								v-model="message"
 							/>
 
 							<div class="actions">
@@ -113,9 +136,9 @@
 										<span id="mic" title="Mikrofon">
 											<i id="micload" class="fa fa-microphone" aria-hidden="true"></i>
 										</span>
-										<!-- <span id="broadcast" title="Yayına Katıl">
-								<i id="broadcastload" class="fas fa-broadcast-tower" aria-hidden="true"></i>
-							</span> -->
+										<span id="broadcast" title="Yayına Katıl">
+											<i id="broadcastload" class="fas fa-broadcast-tower" aria-hidden="true"></i>
+										</span>
 										<span id="webcam" title="Kamera">
 											<i id="webcamload" class="fa fa-video-camera" aria-hidden="true"></i>
 										</span>
@@ -169,7 +192,7 @@
 							<button
 								id="sendmsg"
 								:style="{ 'background-color': settings.themeColor }"
-								onclick="sendMessage();"
+								@click="sendMessage"
 							>
 								<i class="fa fa-paper-plane"></i>
 							</button>
@@ -181,7 +204,7 @@
 
 		<div id="lightbox" v-if="isLoading">
 			<div id="loader">
-				<img src="/assets/images/loader.gif" width="100" :alt="$t('Loading') + '...'" />
+				<img src="images/loader.gif" width="100" :alt="$t('Loading') + '...'" />
 			</div>
 		</div>
 
@@ -196,24 +219,12 @@ import StatusVue from '@/components/Status.vue';
 import axios, { AxiosResponse } from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { defineComponent } from 'vue';
-import { IRoom, IUser } from '@/interfaces/server.interfaces';
-import { Connection } from '@/rtc/connection';
-import {
-	IExtraData,
-	IOnExtraDataUpdatedEvent,
-	IOnMessageEvent,
-	IOnOpenEvent,
-	IRTCMultiConnection,
-} from '@/interfaces/RTCMultiConnection';
-import { SocketEventType } from '@/rtc/socket.enum';
+import { IRoom, ISendMessage, IUser, IUserForClient } from '@/interfaces/server.interfaces';
+import { SocketEventType } from '@/socket/socket.enum';
 import SettingsVue from '@/components/Settings.vue';
 import { swalServerError } from '@/utils';
 import LeftVue from '@/components/Left.vue';
 
-export interface IUserForList extends IUser {
-	room: IRoom;
-	participantId: string;
-}
 export default defineComponent({
 	name: 'Chat',
 	components: {
@@ -224,12 +235,12 @@ export default defineComponent({
 	data(): {
 		settings: { themeColor: string; logo: string };
 		isLoading: boolean;
-		user: IUser | null;
-		connection: IRTCMultiConnection | null;
-		messages: IOnMessageEvent[];
-		usersInRoom: IUserForList[];
-		usersInAllRooms: IUserForList[];
+		messages: ISendMessage[];
+		allUsers: IUserForClient[];
 		isRightVisible: boolean;
+		message: string;
+		rooms: IRoom[];
+		user: IUserForClient | null;
 	} {
 		return {
 			settings: {
@@ -237,20 +248,32 @@ export default defineComponent({
 				logo: 'logo.png',
 			},
 			isLoading: true,
-			user: null,
-			connection: null,
 			messages: [],
-			usersInRoom: [],
-			usersInAllRooms: [],
+			allUsers: [],
 			isRightVisible: true,
+			message: '',
+			rooms: [],
+			user: null,
 		};
 	},
 	props: {},
 	methods: {
-		dos() {},
-		showProfileinfo(participantId: string) {
-			if (this.connection!.userid == participantId) {
-				if (this.connection!.extra.user.rank.value == 0) {
+		dos() {
+			console.log(JSON.stringify(this.user));
+		},
+		sendMessage() {
+			const message = this.message.trim();
+			if (!message.length) return;
+			this.$socket.emit(SocketEventType.SEND_MESSAGE, {
+				user: this.user,
+				text: message,
+				type: 'ROOM_MESSAGE',
+			});
+			this.message = '';
+		},
+		showProfileinfo(clientId: string) {
+			if (this.user?.clientId == clientId) {
+				if (this.user.rank.value == 0) {
 					Swal.fire({
 						title: `<i class='fa fa-info-circle'></i> ${this.$t('Information')}`,
 						icon: 'info',
@@ -385,33 +408,28 @@ export default defineComponent({
 						.catch();
 				}
 			}
-			this.connection!.socket.emit('get-remote-user-extra-data', participantId, (extra: IExtraData) => {
-				console.log({ extra111111: extra });
+		},
+		syncUsers(users: IUserForClient[]) {
+			this.allUsers = this.allUsers.filter((roomUser) =>
+				users.some((user) => user.clientId === roomUser.clientId),
+			);
+
+			users.forEach((user) => {
+				this.upsertUser(user);
 			});
 		},
-		addUserToRoomList(newUser: IUserForList) {
-			var user = this.usersInRoom.find((user) => user.participantId == newUser.participantId);
+		upsertUser(newUser: IUserForClient) {
+			var user = this.allUsers.find((user) => user.clientId == newUser.clientId);
 			if (user) {
 				Object.assign(user, newUser); // update the user
 			} else {
-				this.usersInRoom.push(newUser);
+				this.allUsers.push(newUser);
 			}
 		},
-		removeUserFromRoomList(participantId: string) {
-			this.usersInRoom = this.usersInRoom.filter((user) => user.participantId !== participantId);
+		removeUser(clientId: string) {
+			this.allUsers = this.allUsers.filter((user) => user.clientId !== clientId);
 		},
-		addUserToAllRoomsList(user: IUserForList) {},
-		removeUserFromAllRoomsList(user: IUserForList) {},
-		addMessage(newMessage: IOnMessageEvent) {
-			console.log(
-				newMessage.extra.user.rank.value < this.connection!.extra.user.rank.value &&
-					this.connection!.extra.user.permission.canSeeIpOfUsers,
-			);
-			console.log({
-				userRank: newMessage.extra.user.rank.value,
-				myrank: this.connection!.extra.user.rank.value,
-				permission: this.connection!.extra.user.permission.canSeeIpOfUsers,
-			});
+		addMessage(newMessage: ISendMessage) {
 			this.messages.push(newMessage);
 			if (this.messages.length > 200) {
 				this.messages.shift();
@@ -432,18 +450,20 @@ export default defineComponent({
 				});
 		},
 		whoIs(username: string) {
-			this.connection?.socket.emit(SocketEventType.GET_IP, username);
+			this.$socket.emit(SocketEventType.GET_IP, username);
 		},
 		setConnectionEvents() {
-			if (!this.connection) return;
-
-			this.connection.socket.on(SocketEventType.WHO_IS, (data: string) => {
-				Swal.fire(this.$t('Who is?'), data, 'info');
+			this.$socket.on(SocketEventType.UPDATE_EXTRA_DATA, (event: IUserForClient) => {
+				if (event.clientId == this.user?.clientId) {
+					Object.assign(this.user, event);
+				} else {
+					this.upsertUser(event);
+				}
 			});
-			this.connection.socket.on(SocketEventType.GET_IP, (data: string) => {
+			this.$socket.on(SocketEventType.GET_IP, (data: string) => {
 				Swal.fire(this.$t('IP Adress'), data, 'info');
 			});
-			this.connection.socket.on(SocketEventType.DOUBLE_LOGIN, (data: string) => {
+			this.$socket.on(SocketEventType.DOUBLE_LOGIN, (data: string) => {
 				Swal.fire({
 					title: `<i class='fa fa-close'></i> ! ${this.$t('Warning').toUpperCase()}} !`,
 					text: this.$t(
@@ -458,102 +478,72 @@ export default defineComponent({
 					confirmButtonColor: '#d13131',
 				});
 			});
-
-			this.connection.onExtraDataUpdated = (event: IOnExtraDataUpdatedEvent) => {
-				console.log('onExtraDataUpdated', { event });
-				const userForList: IUserForList = {
-					...event.extra.user,
-					participantId: event.userid,
-					room: event.extra.room,
-				};
-				this.addUserToRoomList(userForList);
-			};
-
-			this.connection.onopen = (event: IOnOpenEvent) => {
-				console.log('onopen', { event });
-				const userForList: IUserForList = {
-					...event.extra.user,
-					participantId: event.userid,
-					room: event.extra.room,
-				};
-				this.addUserToRoomList(userForList);
-			};
-
-			// this.connection.onNewParticipant = (
-			// 	participantId: any,
-			// 	userPreferences: any,
-			// ) => {
-			// 	console.log('onNewParticipant', {
-			// 		participantId,
-			// 		userPreferences,
-			// 	});
-			// 	this.connection!.socket.emit(
-			// 		'get-remote-user-extra-data',
-			// 		participantId,
-			// 		(extra: any) => {
-			// 			console.log('onNewParticipant', { extra });
-			// 			this.connection!.acceptParticipationRequest(
-			// 				participantId,
-			// 				userPreferences,
-			// 			);
-			// 		},
-			// 	);
-			// };
-			this.connection.onleave = (event) => {
-				console.log('onleave', { event });
-				this.removeUserFromRoomList(event.userid);
-				this.addMessage({
-					...event,
-					data: {
-						text: `${event.extra.user.username} ${this.$t('leaved the room...')}`,
-						type: 'EVENT',
-					},
-				});
-			};
-			this.connection.onmessage = (event) => {
-				console.log('onmessage', { event });
-				// events
-				if (event.data.type == 'EVENT') {
-					if (event.extra.room.id == this.connection!.extra.room.id && event.data.text == 'entered') {
-						event.data.text = `${event.extra.user.username} ${this.$t('entered the room...')}`;
+			this.$socket.on(SocketEventType.USER_CONNECTED, (user: IUserForClient) => {
+				console.log(SocketEventType.USER_CONNECTED, { user });
+				this.upsertUser(user);
+			});
+			this.$socket.on(SocketEventType.USER_DISCONNECTED, (clientId: string) => {
+				console.log(SocketEventType.USER_DISCONNECTED, { clientId });
+				this.removeUser(clientId);
+			});
+			this.$socket.on(SocketEventType.GET_ALL_USERS, (users: IUserForClient[]) => {
+				console.log(SocketEventType.GET_ALL_USERS, { users });
+				this.syncUsers(users);
+			});
+			this.$socket.on(SocketEventType.SEND_MESSAGE, (event: ISendMessage) => {
+				console.log(SocketEventType.SEND_MESSAGE, { event });
+				if (event.type == 'ROOM_EVENT') {
+					if (event.user.room.id == this.user?.room.id && event.text == 'entered') {
+						event.text = `${event.user.username} ${this.$t('entered the room...')}`;
 						this.addMessage(event);
-					} else if (event.extra.room.id == this.connection!.extra.room.id && event.data.text == 'leaved') {
-						event.data.text = `${event.extra.user.username} ${this.$t('leaved the room...')}`;
+					} else if (event.user.room.id == this.user?.room.id && event.text == 'leaved') {
+						event.text = `${event.user.username} ${this.$t('leaved the room...')}`;
 						this.addMessage(event);
 					}
+				} else if (event.type == 'ROOM_MESSAGE') {
+					this.messages.push(event);
 				}
-			};
+			});
 		},
 	},
-	mounted() {
-		this.isLoading = false;
-	},
-	async created() {
+	async mounted() {
 		try {
-			this.user = (await axios.get('/user/me')).data;
-			this.connection = await Connection.getInstance();
-			this.connection.extra.user = this.user!;
-			const userForList: IUserForList = {
-				...this.user!,
-				participantId: this.connection.userid,
-				room: this.connection.extra.room,
-			};
-			this.addUserToRoomList(userForList);
-			this.setConnectionEvents();
+			const _user = (await axios.get('/user/me')).data;
+			this.rooms = (await axios.get('/room')).data;
 
-			setTimeout(() => {
-				this.connection!.send({ text: 'entered', type: 'EVENT' });
-			}, 1000);
+			if (this.$socket.connected) {
+				this.$socket.disconnect();
+			}
+			this.$socket.auth = { username: _user?.username };
+
+			this.$socket.on(SocketEventType.SET_USER_DATA, (event: IUserForClient) => {
+				console.log(SocketEventType.SET_USER_DATA, { event });
+				this.user = event;
+				this.setConnectionEvents();
+				this.isLoading = false;
+
+				this.$socket.emit(SocketEventType.GET_ALL_USERS);
+			});
+			this.$socket.connect();
+			window.socket = this.$socket; // TODO remove this
 		} catch (error) {
 			console.error(error);
 		}
 	},
+	async created() {},
 	watch: {
 		messages() {
 			this.$nextTick(() => {
 				const chatContainer = this.$refs.chatContainer as HTMLDivElement;
 				chatContainer.scrollTop = chatContainer.scrollHeight;
 			});
+		},
+		user: {
+			handler(user) {
+				console.log('update user', { user: this.user });
+				this.$socket.emit(SocketEventType.UPDATE_EXTRA_DATA);
+			},
+			deep: true,
 		},
 	},
 	computed: {

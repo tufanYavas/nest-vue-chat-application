@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, LoggerService } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { parse } from 'cookie';
 import { User } from '../users/entities/user.entity';
@@ -6,7 +6,10 @@ import { comparePasswords } from 'src/utils';
 
 @Injectable()
 export class AuthService {
-	constructor(private readonly usersService: UsersService) {}
+	constructor(
+		@Inject('LoggerService') private readonly logger: LoggerService,
+		private readonly usersService: UsersService,
+	) {}
 
 	async validateUserFromCookies(cookies: string): Promise<User> {
 		if (!cookies) return null;
@@ -36,6 +39,7 @@ export class AuthService {
 			gender,
 		});
 
+		this.logger.log(`User created: ${user.id}`);
 		return user;
 	}
 

@@ -1,4 +1,10 @@
 export enum SocketEventType {
+	SEND_MESSAGE = 'sendMessage',
+	UPDATE_EXTRA_DATA = 'updateExtraData',
+	USER_DISCONNECTED = 'userDisconnected',
+	SET_USER_DATA = 'setUserData',
+	GET_ALL_USERS = 'getAllUsers',
+
 	ADD_VIEWER = 'addViewer',
 	REMOVE_VIEWER = 'removeViewer',
 	UPDATE_VIEWER = 'updateViewer',
@@ -46,4 +52,6 @@ export enum SocketEventType {
 	MAKE_DEFAULT_ROOM = 'makeDefaultRoom',
 	UPDATE_PERMISSIONS = 'updatePermissions',
 	UPDATE_ROOM_INFO = 'updateRoomInfo',
+	USER_CONNECTED = 'userConnected',
+	SYNC_USERS = 'syncUsers',
 }

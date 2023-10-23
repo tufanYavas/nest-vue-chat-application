@@ -18,9 +18,6 @@ export class UserDto {
 	profileImage?: string;
 
 	@Expose()
-	type: number;
-
-	@Expose()
 	banned: boolean;
 
 	@Expose()
@@ -32,7 +29,7 @@ export class UserDto {
 	@Expose()
 	created: Date;
 
-	// status
+	// status name
 	@Expose()
 	name: Date;
 

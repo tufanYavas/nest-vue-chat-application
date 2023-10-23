@@ -82,6 +82,7 @@ export default defineComponent({
 			required: true,
 		},
 	},
+	emits: ['resetChat', 'update:user'],
 	methods: {
 		async logout() {
 			await axios.post('/auth/signout');
@@ -158,6 +159,7 @@ export default defineComponent({
 							})
 							.then(async (response: any) => {
 								setTimeout(() => {
+									this.$emit('update:user', response.data);
 									Swal.fire(this.$t('Successful'), undefined, 'success');
 									this.$router.push('/login');
 								}, 1200);
@@ -185,13 +187,5 @@ export default defineComponent({
 			}
 		},
 	},
-	mounted() {},
-	created() {},
 });
 </script>
-
-<style scoped>
-#settingsmenu {
-	display: block;
-}
-</style>

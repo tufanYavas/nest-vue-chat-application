@@ -12,6 +12,10 @@ export class RoomService {
 		private readonly roomRepository: Repository<Room>,
 	) {}
 
+	getDefaultRoom() {
+		return this.roomRepository.findOneBy({ default: true });
+	}
+
 	create(createRoomDto: CreateRoomDto) {
 		const room = this.roomRepository.create(createRoomDto);
 		if (createRoomDto.default) {

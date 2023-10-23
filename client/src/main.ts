@@ -6,7 +6,7 @@ import jQuery from 'jquery';
 import Swal from 'sweetalert2';
 import axios from 'axios';
 import router from './router';
-import { io } from 'socket.io-client';
+import socketPlugin from './plugins/socketPlugin';
 
 axios.defaults.baseURL = process.env.VUE_APP_BASE_URL;
 axios.defaults.withCredentials = true;
@@ -15,8 +15,7 @@ axios.defaults.withCredentials = true;
 // import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
 import 'sweetalert2/dist/sweetalert2.min.css';
 
-window.io = io;
 window.$ = window.jQuery = jQuery;
 window.Swal = Swal;
 
-createApp(App).use(router).use(BootstrapVue3).use(i18n).mount('#app');
+createApp(App).use(router).use(BootstrapVue3).use(socketPlugin).use(i18n).mount('#app');

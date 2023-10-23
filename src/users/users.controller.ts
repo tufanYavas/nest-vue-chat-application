@@ -100,6 +100,7 @@ export class UsersController {
 		return user;
 	}
 
+	@UseGuards(AuthNonGuestGuard)
 	@Post('setStatus')
 	async setStatus(@Body('id') id: number, @Session() session: Express.Request['session']) {
 		return await this.usersService.setStatus(session.user, id);

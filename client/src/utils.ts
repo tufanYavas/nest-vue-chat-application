@@ -1,6 +1,5 @@
 export function swalServerError(error: any) {
 	let message: string = '';
-	console.log(error.response.data);
 	if (error.response.data.message) {
 		if (typeof error.response.data.message === 'object') {
 			for (const msg of error.response.data.message) {

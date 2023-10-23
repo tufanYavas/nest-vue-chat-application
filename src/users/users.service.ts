@@ -68,7 +68,6 @@ export class UsersService {
 
 		const defaultStatus = await this.statusRepository.findOne(parseInt(process.env.DEFAULT_STATUS_ID));
 		user.status = defaultStatus;
-
 		return user;
 	}
 

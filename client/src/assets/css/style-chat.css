@@ -252,7 +252,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	outline: 0;
 	font-family: Arial, FontAwesome;
 	border: 0;
-	display: block;
 	float: left;
 	background: transparent;
 }
@@ -407,7 +406,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	-webkit-box-shadow: 0px 0px 40px -10px rgba(0, 0, 0, 0.75);
 	-moz-box-shadow: 0px 0px 40px -10px rgba(0, 0, 0, 0.75);
 	box-shadow: 0px 0px 40px -10px rgba(0, 0, 0, 0.75);
-	display: none;
 	text-align: left;
 	z-index: 2;
 }
@@ -613,10 +611,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	border-bottom: 1px solid #eaeaea;
 	box-sizing: border-box;
 	position: relative;
-}
-
-#alluserlist {
-	display: none;
 }
 
 .contextmenu {
@@ -2123,7 +2117,7 @@ label[for='iupload'] {
 
 #iupload {
 	position: absolute;
-	top: -1000px;
+	display: none;
 }
 
 /* Ege - admin.html */

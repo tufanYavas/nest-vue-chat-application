@@ -1,5 +1,5 @@
 import Swal from 'sweetalert2';
-import { io } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import { $t } from 'vue-i18n';
 
 declare global {
@@ -9,7 +9,7 @@ declare global {
 		Swal: typeof Swal;
 		// socket: Socket<DefaultEventsMap, DefaultEventsMap>;
 		webkitMediaStream: any;
-		io: typeof io;
+		socket: Socket;
 		$t: typeof $t;
 	}
 }

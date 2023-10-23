@@ -1,8 +1,18 @@
+export interface ISendMessage {
+	user: IUserForClient;
+	text: string;
+	type: 'ROOM_MESSAGE' | 'ALL_MESSAGE' | 'SYSTEM_MESSAGE' | 'PRIVATE_MESSAGE' | 'ROOM_EVENT' | 'ALL_EVENT';
+}
+export interface IUserForClient extends IUser {
+	room: IRoom;
+	clientId: string;
+}
 export interface IRank {
 	name: string;
 	value: number;
 }
 export interface IStatus {
+	id: number;
 	name: string;
 }
 
@@ -45,7 +55,7 @@ export interface IUser {
 	banned: boolean;
 	preventMic: boolean;
 	preventCam: boolean;
-	created: string;
+	created: Date;
 	permission: IPermission;
 	preference: IPreference;
 	status: IStatus;
