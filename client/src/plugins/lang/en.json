@@ -40,5 +40,20 @@
     "Cancel": "Cancel",
     "Save": "Save",
     "Tell us briefly about yourself": "Tell us briefly about yourself",
-    "Old password does not match": "Old password does not match"
+    "Old password does not match": "Old password does not match",
+    "Viewing Profile": "Viewing Profile",
+    "Guest": "Guest",
+    "Ban": "Ban",
+    "Message box is empty": "Message box is empty",
+    "Search in room": "Search in room",
+    "Search User": "Search User",
+    "All Users": "All Users",
+    "Room": "Room",
+    "User Profile": "User Profile",
+    "Search Room": "Search Room",
+    "Message Box": "Message Box",
+    "Report": "Report",
+    "Rooms": "Rooms",
+    "Chat": "Chat",
+    "Back To Room": "Back To Room"
 }

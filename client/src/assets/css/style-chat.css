@@ -68,10 +68,6 @@ body {
 	overflow-y: auto;
 }
 
-.privatechat {
-	display: none;
-}
-
 ul#statusmenu {
 	max-height: 350px;
 	overflow-y: scroll !important;
@@ -1446,11 +1442,6 @@ audio {
 	overflow: hidden;
 }
 
-#profileinfo,
-#privatemessages {
-	display: none;
-}
-
 #profileinfo .goback,
 #privatemessages .goback {
 	width: 100%;
@@ -1532,6 +1523,7 @@ audio {
 	font-size: 10pt;
 	color: #222;
 	border-radius: 3px;
+	cursor: pointer;
 }
 
 #profileinfo .about {
@@ -1563,14 +1555,6 @@ audio {
 	color: #666;
 	padding: 20px 0;
 	font-size: 11pt;
-}
-
-#reportUser,
-#banUser,
-#privateMessage,
-#micCall,
-#webcamCall {
-	cursor: pointer;
 }
 
 .sweet-alert .rounded {
@@ -2195,7 +2179,7 @@ table#login-logs-table > tbody > tr > td {
 }
 
 .private-bg {
-	background-image: url(images/private-bg.jpg) !important;
+	background-image: url(/public/images/private-bg.jpg) !important;
 }
 
 .back-to-room {

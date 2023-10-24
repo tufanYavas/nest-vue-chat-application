@@ -1,6 +1,10 @@
 <template>
 	<div>
 		<div id="wrapper">
+			<!-- fake inputs for browser auto complete -->
+			<input type="text" name="fake-username" autocomplete="off" style="display: none" />
+			<input type="password" name="fake-password" autocomplete="off" style="display: none" />
+
 			<div id="topbar" :style="{ 'background-color': settings.themeColor }">
 				<div id="logo">
 					<img :src="settings.logo" width="110" height="50" alt="Logo" />
@@ -10,15 +14,15 @@
 
 				<Settings v-if="user" ref="settingsComponent" v-model:user="user" @resetChat="messages.length = 0" />
 
-				<div onclick="showPrivateMessages();" id="messagebox" class="pmboxmobile">
+				<div @click="showPrivateMessages" id="messagebox" class="pmboxmobile">
 					<i class="fa fa-comments-o" aria-hidden="true"></i>
-					<div class="messagecounter" id="messagecounter">0</div>
+					<div class="messagecounter" id="messagecounter">{{ privateMessageCount }}</div>
 				</div>
 
 				<div id="profile">
-					<div @click="dos" id="messagebox">
+					<div @click="showPrivateMessages" id="messagebox">
 						<i class="fa fa-comments-o" aria-hidden="true"></i>
-						<div class="messagecounter" id="messagecounter">0</div>
+						<div class="messagecounter" id="messagecounter">{{ privateMessageCount }}</div>
 					</div>
 					<div class="profile-name">
 						<span>{{ user?.username }}</span
@@ -43,10 +47,14 @@
 
 			<Left
 				v-if="user"
+				ref="leftContainer"
+				:rooms="rooms"
 				v-model:user="user"
 				v-model:allUsers="allUsers"
 				v-model:isRightVisible="isRightVisible"
-				@show-profileinfo="showProfileinfo"
+				v-model:privateMessageCount="privateMessageCount"
+				v-model:isPrivateChatVisible="isPrivateChatVisible"
+				@privateChatStarted="privateChattingUser = $event"
 			/>
 
 			<transition name="slide">
@@ -54,70 +62,47 @@
 					id="right"
 					v-show="isRightVisible"
 					class="transparentbackground"
+					:class="{ 'private-bg': isPrivateChatVisible }"
 					:style="{
 						'background-image': !user ? 'none' : user.room.bg ? `url(${user.room.bg})` : 'none',
 					}"
 				>
 					<div id="room">
 						<div class="inner">
-							<div id="roomname"></div>
-							<div id="roomslogan"></div>
+							<div id="roomname">
+								{{
+									(isPrivateChatVisible && privateChattingUser
+										? privateChattingUser.username
+										: user?.room.name) + ' |&nbsp;'
+								}}
+							</div>
+							<div id="roomslogan">
+								<span
+									v-if="isPrivateChatVisible"
+									class="back-to-room"
+									style="cursor: pointer"
+									@click="isPrivateChatVisible = false"
+									><i class="fa fa-arrow-left"></i>&nbsp;{{ $t('Back To Room') }}</span
+								>
+								<span v-else>{{ user?.room.slogan }}</span>
+							</div>
 						</div>
 					</div>
 
-					<div id="chat" ref="chatContainer">
-						<div v-for="(message, id) in messages" :key="id">
-							<div
-								v-if="
-									message.type == 'SYSTEM_MESSAGE' ||
-									(message.type === 'ROOM_EVENT' && message.user.room.id === user?.room.id) ||
-									message.type === 'ALL_EVENT'
-								"
-								class="message"
-							>
-								<div class="centered-content">
-									<div class="content">
-										<div class="inner">
-											<span class="bold">
-												{{ message.text }}
-												<a
-													v-if="
-														user &&
-														message.user.rank.value < user.rank.value &&
-														user.permission.canSeeIpOfUsers
-													"
-													style="color: blue"
-													@click="whoIs(message.user.username)"
-												>
-													{{ $t('Who is?') }}
-												</a>
-											</span>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div
-								v-if="message.type === 'ALL_MESSAGE' || message.type === 'ROOM_MESSAGE'"
-								class="message"
-							>
-								<div class="image">
-									<img
-										:src="`uploads/images/${message.user.profileImage}`"
-										height="32"
-										:alt="message.user.username"
-									/>
-								</div>
-								<div class="content">
-									<div style="font-size: 10pt" class="inner">
-										<span class="mmessage" style="word-break: break-all"
-											><span style="font-weight: 600">{{ message.user.username }}:</span
-											><span style="color: #000000">{{ message.text }}</span></span
-										>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+					<ChatMessageArea
+						v-if="user"
+						:messages="messages"
+						:user="user"
+						ref="chatContainer"
+						v-show="!isPrivateChatVisible"
+					/>
+
+					<ChatMessageArea
+						v-if="user && privateChattingUser"
+						:messages="privateMessages[privateChattingUser.clientId]"
+						:user="user"
+						v-show="isPrivateChatVisible"
+					/>
 
 					<div id="send">
 						<div class="inner">
@@ -218,12 +203,13 @@
 import StatusVue from '@/components/Status.vue';
 import axios, { AxiosResponse } from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
-import { defineComponent } from 'vue';
+import { Ref, defineComponent, ref } from 'vue';
 import { IRoom, ISendMessage, IUser, IUserForClient } from '@/interfaces/server.interfaces';
 import { SocketEventType } from '@/socket/socket.enum';
 import SettingsVue from '@/components/Settings.vue';
 import { swalServerError } from '@/utils';
 import LeftVue from '@/components/Left.vue';
+import ChatMessageAreaVue from '@/components/ChatMessageArea.vue';
 
 export default defineComponent({
 	name: 'Chat',
@@ -231,6 +217,7 @@ export default defineComponent({
 		Status: StatusVue,
 		Settings: SettingsVue,
 		Left: LeftVue,
+		ChatMessageArea: ChatMessageAreaVue,
 	},
 	data(): {
 		settings: { themeColor: string; logo: string };
@@ -241,6 +228,10 @@ export default defineComponent({
 		message: string;
 		rooms: IRoom[];
 		user: IUserForClient | null;
+		privateMessageCount: number;
+		isPrivateChatVisible: boolean;
+		privateChattingUser: IUserForClient | undefined;
+		privateMessages: Ref<Record<string, ISendMessage[]>>;
 	} {
 		return {
 			settings: {
@@ -254,160 +245,31 @@ export default defineComponent({
 			message: '',
 			rooms: [],
 			user: null,
+			privateMessageCount: 0,
+			isPrivateChatVisible: false,
+			privateChattingUser: undefined,
+			privateMessages: ref<Record<string, ISendMessage[]>>({}),
 		};
 	},
 	props: {},
 	methods: {
-		dos() {
-			console.log(JSON.stringify(this.user));
+		showPrivateMessages() {
+			(this.$refs.leftContainer as InstanceType<typeof LeftVue>).showPrivateMessages();
 		},
 		sendMessage() {
-			const message = this.message.trim();
-			if (!message.length) return;
-			this.$socket.emit(SocketEventType.SEND_MESSAGE, {
-				user: this.user,
-				text: message,
-				type: 'ROOM_MESSAGE',
-			});
+			const message: ISendMessage = {
+				user: this.user!,
+				text: this.message.trim(),
+				type: this.isPrivateChatVisible ? 'PRIVATE_MESSAGE' : 'ROOM_MESSAGE',
+				to:
+					this.isPrivateChatVisible && this.privateChattingUser
+						? this.privateChattingUser.clientId
+						: undefined,
+			};
+
+			if (!message.text.length) return;
+			this.$socket.emit(SocketEventType.SEND_MESSAGE, message);
 			this.message = '';
-		},
-		showProfileinfo(clientId: string) {
-			if (this.user?.clientId == clientId) {
-				if (this.user.rank.value == 0) {
-					Swal.fire({
-						title: `<i class='fa fa-info-circle'></i> ${this.$t('Information')}`,
-						icon: 'info',
-						text: this.$t('Please sign up to edit your profile.'),
-						showCancelButton: true,
-						cancelButtonText: this.$t('Later'),
-						confirmButtonText: this.$t('Sign up'),
-						confirmButtonColor: '#d13131',
-					}).then((result: SweetAlertResult) => {
-						if (result.isConfirmed) {
-							(this.$refs.settingsComponent as InstanceType<typeof SettingsVue>).showRegisterForm();
-						}
-					});
-				} else {
-					Swal.fire({
-						title: `<i class='fa fa-user'></i> ${this.$t('Your Profile')}`,
-						html: `
-							<div id="profilesettings">
-							<div id="_profileImage" class="profile-image"><img src="${this.profileImagePath}" height="120"
-								alt="root" />
-								<div class='placeholder'><i class='fa fa-cloud-upload' aria-hidden='true'></i></div>
-							</div>
-							<div class="profile-name">${this.user?.username}</div>
-							<div class="form-group">
-								<div class="swal2-label"><i class="fa fa-question-circle"></i>&nbsp;${this.$t('About Me')}:</div>
-								<textarea class="swal2-textarea" id="aboutme" placeholder="${this.$t('Tell us briefly about yourself')}">${
-							this.user?.about ?? ''
-						}</textarea>
-							</div>
-							</div>
-							<div class="form-group">
-							<div class="swal2-label"><i class="fa fa-lock"></i>&nbsp;${this.$t('Current Password')}:</div>
-							<input type="password" id="old-pass" placeholder="${this.$t('Current Password')}}" class="swal2-input">
-							</div>
-							<div class="form-group">
-							<div class="swal2-label"><i class="fa fa-lock"></i>&nbsp;${this.$t('New Password')}:</div>
-							<input type="password" id="new-pass" placeholder="${this.$t('New Password')}}" class="swal2-input">
-							</div>
-							</div>
-							<h2><i class="fa fa-info-circle" aria-hidden="true"></i> ${this.$t('Preferences')}</h2>
-							<div class="form-group">
-							<div class="oo-switch"><span>${this.$t('Private Message')}</span></div>
-							<div class="oo-switch2">
-								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="pmSwitch"
-									${
-										this.user?.preference.allowPrivateMessagesFromOthers ? 'checked' : ''
-									}><label class="onoffswitch-label" for="pmSwitch"></label></div>
-							</div>
-							</div>
-							<div class="form-group">
-							<div class="oo-switch"><span>${this.$t('Voice Call')}</span></div>
-							<div class="oo-switch2">
-								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="voiceCallSwitch"
-									${
-										this.user?.preference.allowVoiceCallsFromOthers ? 'checked' : ''
-									}><label class="onoffswitch-label" for="voiceCallSwitch"></label></div>
-							</div>
-							</div>
-							<div class="form-group">
-							<div class="oo-switch"><span>${this.$t('Video Call')}</span></div>
-							<div class="oo-switch2">
-								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="videoCallSwitch"
-									${
-										this.user?.preference.allowVideoCallsFromOthers ? 'checked' : ''
-									}><label class="onoffswitch-label" for="videoCallSwitch"></label></div>
-							</div>
-							</div>
-							<div class="form-group">
-							<div class="oo-switch"><span>${this.$t('Notification Sounds')}</span></div>
-							<div class="oo-switch2">
-								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="notificationSoundSwitch"
-									${
-										this.user?.preference.notificationEnabled ? 'checked' : ''
-									}><label class="onoffswitch-label" for="notificationSoundSwitch"></label></div>
-							</div>
-							</div>
-						`,
-						showCancelButton: true,
-						cancelButtonText: this.$t('Cancel'),
-						confirmButtonText: 'Kaydet',
-						confirmButtonColor: '#d13131',
-						didOpen: () => {
-							document!.getElementById('_profileImage')!.addEventListener('change', () => {
-								document!.getElementById('uploadFile')!.click();
-							});
-						},
-						preConfirm: () => {
-							const aboutMeValue = (document.getElementById('aboutme') as HTMLInputElement).value;
-							const oldPassValue = (document.getElementById('old-pass') as HTMLInputElement).value;
-							const newPassValue = (document.getElementById('new-pass') as HTMLInputElement).value;
-							const pmSwitchChecked = (document.getElementById('pmSwitch') as HTMLInputElement).checked;
-							const voiceCallSwitchChecked = (
-								document.getElementById('voiceCallSwitch') as HTMLInputElement
-							).checked;
-							const videoCallSwitchChecked = (
-								document.getElementById('videoCallSwitch') as HTMLInputElement
-							).checked;
-							const notificationSoundSwitchChecked = (
-								document.getElementById('notificationSoundSwitch') as HTMLInputElement
-							).checked;
-
-							const data: any = {
-								about: aboutMeValue,
-								allowPrivateMessagesFromOthers: pmSwitchChecked,
-								allowVoiceCallsFromOthers: voiceCallSwitchChecked,
-								allowVideoCallsFromOthers: videoCallSwitchChecked,
-								notificationEnabled: notificationSoundSwitchChecked,
-							};
-
-							if (oldPassValue) {
-								data.oldPassword = oldPassValue;
-							}
-							if (newPassValue) {
-								data.newPassword = newPassValue;
-							}
-
-							return data;
-						},
-					})
-						.then((result) => {
-							if (result.isConfirmed) {
-								axios
-									.patch('/user/updateProfile', result.value)
-									.then(async (response: any) => {
-										this.user = response.data;
-									})
-									.catch((error: any) => {
-										swalServerError(error);
-									});
-							}
-						})
-						.catch();
-				}
-			}
 		},
 		syncUsers(users: IUserForClient[]) {
 			this.allUsers = this.allUsers.filter((roomUser) =>
@@ -422,8 +284,16 @@ export default defineComponent({
 			var user = this.allUsers.find((user) => user.clientId == newUser.clientId);
 			if (user) {
 				Object.assign(user, newUser); // update the user
+				if (this.user) Object.assign(this.user, event);
 			} else {
 				this.allUsers.push(newUser);
+			}
+		},
+		addPrivateMessage(message: ISendMessage) {
+			if (!this.privateMessages[message.user.clientId]) this.privateMessages[message.user.clientId] = [];
+			this.privateMessages[message.user.clientId].push(message);
+			if (this.privateMessages[message.user.clientId].length > 200) {
+				this.privateMessages[message.user.clientId].shift();
 			}
 		},
 		removeUser(clientId: string) {
@@ -449,16 +319,10 @@ export default defineComponent({
 					swalServerError(error);
 				});
 		},
-		whoIs(username: string) {
-			this.$socket.emit(SocketEventType.GET_IP, username);
-		},
 		setConnectionEvents() {
 			this.$socket.on(SocketEventType.UPDATE_EXTRA_DATA, (event: IUserForClient) => {
-				if (event.clientId == this.user?.clientId) {
-					Object.assign(this.user, event);
-				} else {
-					this.upsertUser(event);
-				}
+				console.log(SocketEventType.UPDATE_EXTRA_DATA, event);
+				this.upsertUser(event);
 			});
 			this.$socket.on(SocketEventType.GET_IP, (data: string) => {
 				Swal.fire(this.$t('IP Adress'), data, 'info');
@@ -502,6 +366,8 @@ export default defineComponent({
 					}
 				} else if (event.type == 'ROOM_MESSAGE') {
 					this.messages.push(event);
+				} else if (event.type == 'PRIVATE_MESSAGE') {
+					this.addPrivateMessage(event);
 				}
 			});
 		},
@@ -525,7 +391,6 @@ export default defineComponent({
 				this.$socket.emit(SocketEventType.GET_ALL_USERS);
 			});
 			this.$socket.connect();
-			window.socket = this.$socket; // TODO remove this
 		} catch (error) {
 			console.error(error);
 		}
@@ -541,7 +406,7 @@ export default defineComponent({
 		user: {
 			handler(user) {
 				console.log('update user', { user: this.user });
-				this.$socket.emit(SocketEventType.UPDATE_EXTRA_DATA);
+				this.$socket.emit(SocketEventType.UPDATE_EXTRA_DATA, this.user);
 			},
 			deep: true,
 		},

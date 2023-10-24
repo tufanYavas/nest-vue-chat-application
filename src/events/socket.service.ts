@@ -15,11 +15,15 @@ export class SocketService {
 	sendMessage(client: SocketWithData, data: ISendMessage) {
 		if (data.type === 'ALL_EVENT' || data.type === 'ALL_MESSAGE' || data.type === 'SYSTEM_MESSAGE') {
 			this.server.emit(SocketEventType.SEND_MESSAGE, data);
-		}
-		if (data.type === 'ROOM_EVENT' || data.type == 'ROOM_MESSAGE') {
+		} else if (data.type === 'ROOM_EVENT' || data.type == 'ROOM_MESSAGE') {
 			this.server
 				.to(`${client.data.user.room.id}${process.env.ROOM_POSTFIX}`)
 				.emit(SocketEventType.SEND_MESSAGE, data);
+		} else if (data.type === 'PRIVATE_MESSAGE') {
+			const targetClient = this.server.sockets.sockets.get(data.to);
+			if (targetClient) {
+				targetClient.emit(SocketEventType.SEND_MESSAGE, data);
+			}
 		}
 	}
 	getAllUsers(): WsResponse<IUserForClient[]> {
@@ -144,10 +148,12 @@ export class SocketService {
 
 	handleDisconnect(client: SocketWithData) {
 		this.logger.log(`Client disconnected: ${client.id}`);
-		const roomName = `${client.data.user.room.id}${process.env.ROOM_POSTFIX}`;
+		if (client.data.user && client.data.user.room) {
+			const roomName = `${client.data.user.room.id}${process.env.ROOM_POSTFIX}`;
+			const msg: ISendMessage = { user: client.data.user, text: 'leaved', type: 'ROOM_EVENT' };
+			this.server.to(roomName).emit(SocketEventType.SEND_MESSAGE, msg);
+		}
 
-		const msg: ISendMessage = { user: client.data.user, text: 'leaved', type: 'ROOM_EVENT' };
-		this.server.to(roomName).emit(SocketEventType.SEND_MESSAGE, msg);
 		this.server.emit(SocketEventType.USER_DISCONNECTED, client.id);
 	}
 }

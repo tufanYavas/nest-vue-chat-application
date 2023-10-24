@@ -56,7 +56,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@SubscribeMessage(SocketEventType.SEND_MESSAGE)
 	sendMessage(@ConnectedSocket() client: SocketWithData, @MessageBody() data: ISendMessage) {
-		return this.socketService.sendMessage(client, data);
+		if (data && data.text) return this.socketService.sendMessage(client, data);
+	}
+
+	@SubscribeMessage(SocketEventType.UPDATE_EXTRA_DATA)
+	updateExtraData(@ConnectedSocket() client: SocketWithData, @MessageBody() user: IUserForClient) {
+		if (user) {
+			Object.assign(client.data.user, user);
+			return this.server.emit(SocketEventType.UPDATE_EXTRA_DATA, client.data.user.getDto());
+		}
 	}
 
 	@SubscribeMessage(SocketEventType.GET_ALL_USERS)

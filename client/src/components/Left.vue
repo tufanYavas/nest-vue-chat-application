@@ -12,7 +12,7 @@
 						}"
 					>
 						<i class="fa fa-commenting" aria-hidden="true"></i>
-						Sohbet
+						{{ $t('Chat') }}
 					</li>
 					<li
 						id="showRooms"
@@ -23,7 +23,7 @@
 						}"
 					>
 						<i class="fa fa-telegram" aria-hidden="true"></i>
-						Odalar
+						{{ $t('Rooms') }}
 					</li>
 					<li
 						id="showAllUsers"
@@ -33,7 +33,7 @@
 							'm-active': activeTab === 'ALLUSERS' && isMobile,
 						}"
 					>
-						<i class="fa fa-users"></i> Tüm Kişiler (<span style="cursor: pointer" id="whole">{{
+						<i class="fa fa-users"></i> {{ $t('All Users') }} (<span style="cursor: pointer" id="whole">{{
 							allUsers.length
 						}}</span
 						>)
@@ -46,7 +46,7 @@
 							'm-active': activeTab === 'USERS' && isMobile,
 						}"
 					>
-						<i class="fa fa-users"></i> Oda (<span style="cursor: pointer" id="wholeroom">{{
+						<i class="fa fa-users"></i> {{ $t('Room') }} (<span style="cursor: pointer" id="wholeroom">{{
 							allUsersLength
 						}}</span
 						>)
@@ -57,9 +57,20 @@
 			<transition-group name="slide">
 				<div id="roomlist" key="0" v-show="isRoomListVisible">
 					<i style="margin: 0 0 0 10px" class="fa fa-search"></i
-					><input class="search" id="roomsearch" type="text" placeholder="Oda ara..." />
+					><input
+						class="search"
+						id="roomsearch"
+						type="text"
+						v-model="searchRoomText"
+						:placeholder="$t('Search Room')"
+					/>
 
-					<div v-for="room in rooms" :key="room.id" class="room" :class="{ active: room.id == user.room.id }">
+					<div
+						v-for="room in filteredRooms"
+						:key="room.id"
+						class="room"
+						:class="{ active: room.id == user.room.id }"
+					>
 						<div class="name"><i class="fa fa-comment-o" aria-hidden="true"></i> {{ room.name }}</div>
 						<div class="online">
 							<i class="fa fa-lock"></i>
@@ -74,16 +85,12 @@
 						class="search"
 						id="usersearch"
 						autocomplete="off"
+						v-model="searchUsersText"
 						type="text"
-						placeholder="Oda kişilerinde ara"
+						:placeholder="$t('Search in room')"
 					/>
 
-					<div
-						v-for="u in allUsers"
-						:key="u.username"
-						@click="$emit('showProfileinfo', u.clientId)"
-						class="user"
-					>
+					<div v-for="u in filteredUsers" :key="u.username" @click="showProfileinfo(u.clientId)" class="user">
 						<div class="image">
 							<img
 								style="cursor: pointer"
@@ -120,16 +127,22 @@
 				</div>
 				<div id="alluserlist" key="2" v-show="isAllUserListVisible">
 					<i style="margin: 0 0 0 10px" class="fa fa-search"></i
-					><input class="search" id="userAllsearch" type="text" placeholder="Tüm kişilerde ara" />
+					><input
+						class="search"
+						id="userAllsearch"
+						type="text"
+						v-model="searchAllUsersText"
+						:placeholder="$t('Search User')"
+					/>
 
 					<div
-						v-for="u in allUsers"
+						v-for="u in filteredAllUsers"
 						:key="u.username"
-						@click="$emit('showProfileinfo', u.clientId)"
+						@click="showProfileinfo(u.clientId)"
 						class="user"
 					>
 						<div class="image">
-							<img src="images/man-profile.png" height="50" :alt="u.username" />
+							<img :src="`uploads/images/${u.profileImage}`" height="50" :alt="u.username" />
 						</div>
 						<div class="info">
 							<div class="name">{{ u.username }}</div>
@@ -159,46 +172,55 @@
 				</div>
 			</transition-group>
 		</div>
-		<div id="profileinfo">
+		<div id="profileinfo" v-show="isProfileInfoVisible" v-if="viewingUser">
 			<div class="goback">
-				<span onclick="showRoomInfo();"
-					><i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Kullanıcı Profili</span
+				<span @click="showRoomInfo"
+					><i class="fa fa-chevron-circle-left" aria-hidden="true"></i> {{ $t('User Profile') }}</span
 				>
 			</div>
 			<div class="uprofile">
-				<h3><i class="fa fa-user"></i> Profil görüntüleniyor</h3>
-				<div class="image"></div>
-				<div class="name"></div>
-				<div class="status"><span class="sinfo"></span><br /><span class="createdDate"></span></div>
+				<h3><i class="fa fa-user"></i>{{ $t('Viewing Profile') }}</h3>
+				<div class="image"><img :src="`uploads/images/${viewingUser.profileImage}`" /></div>
+				<div class="name">
+					{{ `${viewingUser.username}${viewingUser.rank.value === 0 ? ' (' + $t('Guest') + ')' : ''}` }}
+				</div>
+				<div class="status">
+					<span class="sinfo">{{ viewingUser.status.name }}</span
+					><br /><span v-if="viewingUser.rank.value !== 0" class="createdDate">{{
+						viewingUser.created
+					}}</span>
+				</div>
 				<div class="uactions">
 					<ul>
-						<li id="privateMessage" class="privateMessage" onclick="privateMessage();">
-							<i class="fa fa-comment"></i> Özel Mesaj
+						<li class="privateMessage" @click="privateMessage">
+							<i class="fa fa-comment"></i> {{ $t('Private Message') }}
 						</li>
-						<li id="micCall" class="micCall" onclick="micCall();">
-							<i class="fa fa-microphone"></i> Sesli Arama
+						<li class="micCall" @click="startVoiceCall">
+							<i class="fa fa-microphone"></i> {{ $t('Voice Call') }}
 						</li>
-						<li id="webcamCall" class="webcamCall" onclick="webcamCall();">
-							<i class="fa fa-video-camera"></i> Görüntülü Arama
+						<li class="webcamCall" @click="startVideoCall">
+							<i class="fa fa-video-camera"></i> {{ $t('Video Call') }}
 						</li>
-						<li id="banUser" onclick="banUser();"><i class="fa fa-ban"></i> Engelle</li>
-						<li id="reportUser" onclick="report();"><i class="fa fa-flag"></i> Şikayet Et</li>
+						<li @click="banUser"><i class="fa fa-ban"></i> {{ $t('Ban') }}</li>
+						<li @click="reportUser"><i class="fa fa-flag"></i> {{ $t('Report') }}</li>
 					</ul>
 				</div>
 				<div class="about">
-					<h4><i class="fa fa-question-circle"></i> Hakkında:</h4>
-					<div class="uinfo"></div>
+					<h4><i class="fa fa-question-circle"></i> {{ $t('About Me') }}:</h4>
+					<div class="uinfo">{{ viewingUser.about }}</div>
 				</div>
 			</div>
 		</div>
-		<div id="privatemessages">
+		<div id="privatemessages" v-show="isPrivateMessagesVisible">
 			<div class="goback">
-				<span onclick="showRoomInfo();"
-					><i class="fa fa-chevron-circle-left" aria-hidden="true"></i> Mesaj Kutusu</span
+				<span @click="showRoomInfo"
+					><i class="fa fa-chevron-circle-left" aria-hidden="true"></i>{{ $t('Message Box') }}</span
 				>
 			</div>
 			<div id="messagesContainer">
-				<div id="nomessage" class="message"><i class="fa fa-exclamation-triangle"></i> Mesaj kutusunuz boş</div>
+				<div id="nomessage" class="message">
+					<i class="fa fa-exclamation-triangle"></i> {{ $t('Message box is empty') }}
+				</div>
 			</div>
 		</div>
 	</div>
@@ -210,24 +232,37 @@ import axios from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { defineComponent } from 'vue';
 import { IRoom, IUser, IUserForClient } from '@/interfaces/server.interfaces';
+import SettingsVue from './Settings.vue';
 
 export default defineComponent({
 	name: 'Left',
 	data(): {
-		rooms: IRoom[];
 		isRoomListVisible: boolean;
 		isUserListVisible: boolean;
 		isAllUserListVisible: boolean;
 		activeTab: 'ROOMS' | 'USERS' | 'ALLUSERS' | 'CHAT';
 		windowWidth: number;
+		isProfileInfoVisible: boolean;
+		isPrivateMessagesVisible: boolean;
+		viewingUser: IUserForClient | undefined;
+		leftLastShowedType: 'ALL_USERS' | 'ROOM_USERS' | 'ROOMS';
+		searchUsersText: string;
+		searchAllUsersText: string;
+		searchRoomText: string;
 	} {
 		return {
-			rooms: [],
 			isRoomListVisible: false,
 			isUserListVisible: true,
 			isAllUserListVisible: false,
 			activeTab: 'USERS',
 			windowWidth: window.innerWidth,
+			isProfileInfoVisible: false,
+			isPrivateMessagesVisible: false,
+			viewingUser: undefined,
+			leftLastShowedType: 'ROOM_USERS',
+			searchUsersText: '',
+			searchAllUsersText: '',
+			searchRoomText: '',
 		};
 	},
 	props: {
@@ -243,41 +278,236 @@ export default defineComponent({
 			type: Boolean,
 			required: true,
 		},
+		rooms: {
+			type: Object as () => IRoom[],
+			required: true,
+		},
+		privateMessageCount: {
+			type: Number,
+			required: true,
+		},
+		isPrivateChatVisible: {
+			type: Boolean,
+			required: true,
+		},
 	},
-	emits: ['update:user', 'update:allUsers', 'update:isRightVisible', 'showProfileinfo'],
+	emits: [
+		'update:user',
+		'update:allUsers',
+		'update:isRightVisible',
+		'update:privateMessageCount',
+		'update:isPrivateChatVisible',
+		'privateChatStarted',
+	],
 	methods: {
+		startVoiceCall() {},
+		startVideoCall() {},
+		banUser() {},
+		reportUser() {},
+		privateMessage() {
+			this.$emit('update:isPrivateChatVisible', true);
+			this.$emit('privateChatStarted', { ...this.viewingUser });
+		},
+		setAllUnvisibleLeft() {
+			if (this.isAllUserListVisible) {
+				this.leftLastShowedType = 'ALL_USERS';
+				this.isAllUserListVisible = false;
+			} else if (this.isUserListVisible) {
+				this.leftLastShowedType = 'ROOM_USERS';
+				this.isUserListVisible = false;
+			} else if (this.isRoomListVisible) {
+				this.leftLastShowedType = 'ROOM_USERS';
+				this.isRoomListVisible = false;
+			}
+			this.isPrivateMessagesVisible = false;
+			this.isProfileInfoVisible = false;
+		},
+		setVisibleLastLeft() {
+			if (this.leftLastShowedType == 'ALL_USERS') {
+				this.isAllUserListVisible = true;
+			} else if (this.leftLastShowedType == 'ROOM_USERS') {
+				this.isAllUserListVisible = true;
+			} else if (this.leftLastShowedType == 'ROOMS') {
+				this.isRoomListVisible = true;
+			}
+		},
+		showPrivateMessages() {
+			this.setAllUnvisibleLeft();
+			this.isPrivateMessagesVisible = true;
+		},
+		showRoomInfo() {
+			this.setAllUnvisibleLeft();
+			this.setVisibleLastLeft();
+		},
+		showProfileinfo(clientId: string) {
+			if (this.user?.clientId == clientId) {
+				if (this.user.rank.value == 0) {
+					Swal.fire({
+						title: `<i class='fa fa-info-circle'></i> ${this.$t('Information')}`,
+						icon: 'info',
+						text: this.$t('Please sign up to edit your profile.'),
+						showCancelButton: true,
+						cancelButtonText: this.$t('Later'),
+						confirmButtonText: this.$t('Sign up'),
+						confirmButtonColor: '#d13131',
+					}).then((result: SweetAlertResult) => {
+						if (result.isConfirmed) {
+							(this.$refs.settingsComponent as InstanceType<typeof SettingsVue>).showRegisterForm();
+						}
+					});
+				} else {
+					Swal.fire({
+						title: `<i class='fa fa-user'></i> ${this.$t('Your Profile')}`,
+						html: `
+							<div id="profilesettings">
+							<div id="_profileImage" class="profile-image"><img src="${this.profileImagePath}" height="120"
+								alt="root" />
+								<div class='placeholder'><i class='fa fa-cloud-upload' aria-hidden='true'></i></div>
+							</div>
+							<div class="profile-name">${this.user?.username}</div>
+							<div class="form-group">
+								<div class="swal2-label"><i class="fa fa-question-circle"></i>&nbsp;${this.$t('About Me')}:</div>
+								<textarea class="swal2-textarea" id="aboutme" placeholder="${this.$t('Tell us briefly about yourself')}">${
+							this.user?.about ?? ''
+						}</textarea>
+							</div>
+							</div>
+							<div class="form-group">
+							<div class="swal2-label"><i class="fa fa-lock"></i>&nbsp;${this.$t('Current Password')}:</div>
+							<input type="password" id="old-pass" placeholder="${this.$t('Current Password')}}" class="swal2-input">
+							</div>
+							<div class="form-group">
+							<div class="swal2-label"><i class="fa fa-lock"></i>&nbsp;${this.$t('New Password')}:</div>
+							<input type="password" id="new-pass" placeholder="${this.$t('New Password')}}" class="swal2-input">
+							</div>
+							</div>
+							<h2><i class="fa fa-info-circle" aria-hidden="true"></i> ${this.$t('Preferences')}</h2>
+							<div class="form-group">
+							<div class="oo-switch"><span>${this.$t('Private Message')}</span></div>
+							<div class="oo-switch2">
+								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="pmSwitch"
+									${
+										this.user?.preference.allowPrivateMessagesFromOthers ? 'checked' : ''
+									}><label class="onoffswitch-label" for="pmSwitch"></label></div>
+							</div>
+							</div>
+							<div class="form-group">
+							<div class="oo-switch"><span>${this.$t('Voice Call')}</span></div>
+							<div class="oo-switch2">
+								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="voiceCallSwitch"
+									${
+										this.user?.preference.allowVoiceCallsFromOthers ? 'checked' : ''
+									}><label class="onoffswitch-label" for="voiceCallSwitch"></label></div>
+							</div>
+							</div>
+							<div class="form-group">
+							<div class="oo-switch"><span>${this.$t('Video Call')}</span></div>
+							<div class="oo-switch2">
+								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="videoCallSwitch"
+									${
+										this.user?.preference.allowVideoCallsFromOthers ? 'checked' : ''
+									}><label class="onoffswitch-label" for="videoCallSwitch"></label></div>
+							</div>
+							</div>
+							<div class="form-group">
+							<div class="oo-switch"><span>${this.$t('Notification Sounds')}</span></div>
+							<div class="oo-switch2">
+								<div class="onoffswitch"><input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="notificationSoundSwitch"
+									${
+										this.user?.preference.notificationEnabled ? 'checked' : ''
+									}><label class="onoffswitch-label" for="notificationSoundSwitch"></label></div>
+							</div>
+							</div>
+						`,
+						showCancelButton: true,
+						cancelButtonText: this.$t('Cancel'),
+						confirmButtonText: 'Kaydet',
+						confirmButtonColor: '#d13131',
+						didOpen: () => {
+							document!.getElementById('_profileImage')!.addEventListener('change', () => {
+								document!.getElementById('uploadFile')!.click();
+							});
+						},
+						preConfirm: () => {
+							const aboutMeValue = (document.getElementById('aboutme') as HTMLInputElement).value;
+							const oldPassValue = (document.getElementById('old-pass') as HTMLInputElement).value;
+							const newPassValue = (document.getElementById('new-pass') as HTMLInputElement).value;
+							const pmSwitchChecked = (document.getElementById('pmSwitch') as HTMLInputElement).checked;
+							const voiceCallSwitchChecked = (
+								document.getElementById('voiceCallSwitch') as HTMLInputElement
+							).checked;
+							const videoCallSwitchChecked = (
+								document.getElementById('videoCallSwitch') as HTMLInputElement
+							).checked;
+							const notificationSoundSwitchChecked = (
+								document.getElementById('notificationSoundSwitch') as HTMLInputElement
+							).checked;
+
+							const data: any = {
+								about: aboutMeValue,
+								allowPrivateMessagesFromOthers: pmSwitchChecked,
+								allowVoiceCallsFromOthers: voiceCallSwitchChecked,
+								allowVideoCallsFromOthers: videoCallSwitchChecked,
+								notificationEnabled: notificationSoundSwitchChecked,
+							};
+
+							if (oldPassValue) {
+								data.oldPassword = oldPassValue;
+							}
+							if (newPassValue) {
+								data.newPassword = newPassValue;
+							}
+
+							return data;
+						},
+					})
+						.then((result) => {
+							if (result.isConfirmed) {
+								axios
+									.patch('/user/updateProfile', result.value)
+									.then(async (response: any) => {
+										this.$emit('update:user', response.data);
+									})
+									.catch((error: any) => {
+										swalServerError(error);
+									});
+							}
+						})
+						.catch();
+				}
+			} else {
+				this.setAllUnvisibleLeft();
+				this.viewingUser = this.allUsers.find((user) => user.clientId === clientId);
+				this.isProfileInfoVisible = true;
+			}
+		},
 		showRooms() {
+			this.setAllUnvisibleLeft();
 			this.activeTab = 'ROOMS';
-			this.isUserListVisible = false;
-			this.isAllUserListVisible = false;
 			this.isRoomListVisible = true;
 			if (this.isMobile) {
 				this.$emit('update:isRightVisible', false);
 			}
 		},
 		showChat() {
+			this.setAllUnvisibleLeft();
 			this.activeTab = 'CHAT';
-			this.isUserListVisible = false;
-			this.isAllUserListVisible = false;
-			this.isRoomListVisible = false;
 			if (this.isMobile) {
 				this.$emit('update:isRightVisible', true);
 			}
 		},
 		showAllUsers() {
+			this.setAllUnvisibleLeft();
 			this.activeTab = 'ALLUSERS';
-			this.isUserListVisible = false;
 			this.isAllUserListVisible = true;
-			this.isRoomListVisible = false;
 			if (this.isMobile) {
 				this.$emit('update:isRightVisible', false);
 			}
 		},
 		showUsers() {
+			this.setAllUnvisibleLeft();
 			this.activeTab = 'USERS';
 			this.isUserListVisible = true;
-			this.isAllUserListVisible = false;
-			this.isRoomListVisible = false;
 			if (this.isMobile) {
 				this.$emit('update:isRightVisible', false);
 			}
@@ -309,6 +539,28 @@ export default defineComponent({
 		},
 		allUsersLength(): number {
 			return this.allUsers.filter((u) => u.room.id == this.user.room.id).length;
+		},
+		filteredUsers() {
+			if (!this.searchUsersText) return this.roomUsers;
+
+			return this.roomUsers.filter((user) =>
+				user.username.toLowerCase().includes(this.searchUsersText.toLowerCase()),
+			);
+		},
+		filteredAllUsers() {
+			if (!this.searchAllUsersText) return this.allUsers;
+
+			return this.allUsers.filter((user) =>
+				user.username.toLowerCase().includes(this.searchAllUsersText.toLowerCase()),
+			);
+		},
+		filteredRooms() {
+			if (!this.searchRoomText) return this.rooms;
+
+			return this.rooms.filter((room) => room.name.toLowerCase().includes(this.searchRoomText.toLowerCase()));
+		},
+		roomUsers() {
+			return this.allUsers.filter((user) => user.room.id == this.user.room.id);
 		},
 	},
 	watch: {

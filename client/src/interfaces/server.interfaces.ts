@@ -2,6 +2,7 @@ export interface ISendMessage {
 	user: IUserForClient;
 	text: string;
 	type: 'ROOM_MESSAGE' | 'ALL_MESSAGE' | 'SYSTEM_MESSAGE' | 'PRIVATE_MESSAGE' | 'ROOM_EVENT' | 'ALL_EVENT';
+	to?: string;
 }
 export interface IUserForClient extends IUser {
 	room: IRoom;
