@@ -13,6 +13,9 @@ export class MessageDto {
 	content: string;
 
 	@Expose()
+	imagePath: string; // chat image path
+
+	@Expose()
 	@Type(() => UserDto)
 	sender: UserDto;
 

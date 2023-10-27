@@ -12,4 +12,7 @@ declare global {
 		socket: Socket;
 		$t: typeof $t;
 	}
+	interface Navigator {
+		userLanguage: string;
+	}
 }

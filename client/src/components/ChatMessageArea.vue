@@ -1,5 +1,5 @@
 <template>
-	<div id="chat">
+	<div id="chat" ref="chatContainer">
 		<div v-for="(message, id) in messages" :key="id">
 			<div
 				v-if="
@@ -67,8 +67,11 @@ export default defineComponent({
 	},
 	watch: {
 		messages: {
-			handler(user) {
-				console.log({ messages: this.messages });
+			handler() {
+				this.$nextTick(() => {
+					const chatContainer = this.$refs.chatContainer as HTMLDivElement;
+					if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+				});
 			},
 			deep: true,
 		},

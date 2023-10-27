@@ -41,7 +41,7 @@ export class UsersController {
 	@UseInterceptors(
 		FileInterceptor('file', {
 			storage: diskStorage({
-				destination: './client/public/uploads/images',
+				destination: './client/public/uploads/profile-images',
 				filename: (req, file, cb) => {
 					const randomName = Array(32)
 						.fill(null)
@@ -71,8 +71,11 @@ export class UsersController {
 			throw new HttpException('Invalid file.', HttpStatus.BAD_REQUEST);
 		}
 		const user = await this.usersService.findOne(session.user.id);
-		const oldImageFullPath = path.join(process.cwd(), `./client/public/uploads/images/${user.profileImage}`);
-		console.log(oldImageFullPath);
+		const oldImageFullPath = path.join(
+			process.cwd(),
+			`./client/public/uploads/profile-images/${user.profileImage}`,
+		);
+
 		if (fs.existsSync(oldImageFullPath)) {
 			fs.unlinkSync(oldImageFullPath);
 		}

@@ -29,4 +29,6 @@ export class Room {
 
 	@OneToMany(() => Message, (message) => message.room)
 	messages: Message[];
+
+	hasPassword: boolean;
 }

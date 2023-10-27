@@ -8,11 +8,11 @@ import {
 	WebSocketServer,
 	WsResponse,
 } from '@nestjs/websockets';
-import { Socket, Server } from 'socket.io';
+import { Server } from 'socket.io';
 import { SocketEventType } from './socket.enum';
 import { ISendMessage, SocketWithData } from './interfaces';
 import { SocketService } from './socket.service';
-import { IUserForClient } from 'src/server.interfaces';
+import { IRoom, IUserForClient } from 'src/server.interfaces';
 
 @WebSocketGateway(3131, {
 	cors: {
@@ -29,42 +29,32 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	@WebSocketServer()
 	server: Server;
 
+	@SubscribeMessage(SocketEventType.ROOM_USER_COUNTS)
+	async updateRoomUserCounts(@ConnectedSocket() client: SocketWithData) {
+		return this.socketService.updateRoomUserCounts(client);
+	}
+
+	@SubscribeMessage(SocketEventType.JOIN_ROOM)
+	async joinRoom(
+		@ConnectedSocket() client: SocketWithData,
+		@MessageBody() data: { room: IRoom; password: string | null },
+	) {
+		return this.socketService.joinRoom(client, data);
+	}
+
 	@SubscribeMessage(SocketEventType.GET_IP)
 	async getIp(@ConnectedSocket() client: SocketWithData, @MessageBody() data: any): Promise<WsResponse> {
 		return this.socketService.getIp(client, data);
 	}
 
-	@SubscribeMessage('joinRoom')
-	handleJoinRoom(client: Socket, room: string): void {
-		client.join(room);
-	}
-
-	@SubscribeMessage('leaveRoom')
-	handleLeaveRoom(client: Socket, room: string): void {
-		client.leave(room);
-	}
-
-	@SubscribeMessage('sendMessageToRoom')
-	handleSendMessageToRoom(client: Socket, payload: { room: string; message: string }): void {
-		this.server.to(payload.room).emit('newMessage', payload.message);
-	}
-
-	@SubscribeMessage('sendMessageToAll')
-	handleSendMessageToAll(client: Socket, message: string): void {
-		this.server.emit('newMessage', message);
-	}
-
 	@SubscribeMessage(SocketEventType.SEND_MESSAGE)
 	sendMessage(@ConnectedSocket() client: SocketWithData, @MessageBody() data: ISendMessage) {
-		if (data && data.text) return this.socketService.sendMessage(client, data);
+		if (data && (data.text || data.contentType)) this.socketService.sendMessage(client, data);
 	}
 
 	@SubscribeMessage(SocketEventType.UPDATE_EXTRA_DATA)
 	updateExtraData(@ConnectedSocket() client: SocketWithData, @MessageBody() user: IUserForClient) {
-		if (user) {
-			Object.assign(client.data.user, user);
-			return this.server.emit(SocketEventType.UPDATE_EXTRA_DATA, client.data.user.getDto());
-		}
+		this.socketService.updateExtraData(client, user);
 	}
 
 	@SubscribeMessage(SocketEventType.GET_ALL_USERS)

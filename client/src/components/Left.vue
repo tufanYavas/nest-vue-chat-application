@@ -34,7 +34,7 @@
 						}"
 					>
 						<i class="fa fa-users"></i> {{ $t('All Users') }} (<span style="cursor: pointer" id="whole">{{
-							allUsers.length
+							allUsersLength
 						}}</span
 						>)
 					</li>
@@ -46,8 +46,8 @@
 							'm-active': activeTab === 'USERS' && isMobile,
 						}"
 					>
-						<i class="fa fa-users"></i> {{ $t('Room') }} (<span style="cursor: pointer" id="wholeroom">{{
-							allUsersLength
+						<i class="fa fa-users"></i> {{ $t('Users') }} (<span style="cursor: pointer" id="wholeroom">{{
+							roomUsersLength
 						}}</span
 						>)
 					</li>
@@ -70,11 +70,13 @@
 						:key="room.id"
 						class="room"
 						:class="{ active: room.id == user.room.id }"
+						@click="joinRoom(room)"
 					>
 						<div class="name"><i class="fa fa-comment-o" aria-hidden="true"></i> {{ room.name }}</div>
 						<div class="online">
-							<i class="fa fa-lock"></i>
-							<i class="fa fa-group"></i> <span class="roomCount" :data-name="room.name">0</span>
+							<i v-if="room.hasPassword" class="fa fa-lock">&nbsp;</i>
+							<i class="fa fa-group">&nbsp;</i>
+							<span class="roomCount" :data-name="room.name">{{ roomUserCounts[room.id] ?? 0 }}</span>
 						</div>
 					</div>
 				</div>
@@ -92,12 +94,7 @@
 
 					<div v-for="u in filteredUsers" :key="u.username" @click="showProfileinfo(u.clientId)" class="user">
 						<div class="image">
-							<img
-								style="cursor: pointer"
-								:src="`uploads/images/${u.profileImage}`"
-								height="50"
-								:alt="u.username"
-							/>
+							<img style="cursor: pointer" :src="getProfileImagePath(u)" height="50" :alt="u.username" />
 						</div>
 						<div class="info">
 							<div class="name">{{ u.username }}</div>
@@ -142,7 +139,7 @@
 						class="user"
 					>
 						<div class="image">
-							<img :src="`uploads/images/${u.profileImage}`" height="50" :alt="u.username" />
+							<img :src="getProfileImagePath(u)" height="50" :alt="u.username" />
 						</div>
 						<div class="info">
 							<div class="name">{{ u.username }}</div>
@@ -180,7 +177,7 @@
 			</div>
 			<div class="uprofile">
 				<h3><i class="fa fa-user"></i>{{ $t('Viewing Profile') }}</h3>
-				<div class="image"><img :src="`uploads/images/${viewingUser.profileImage}`" /></div>
+				<div class="image"><img :src="getProfileImagePath(viewingUser)" /></div>
 				<div class="name">
 					{{ `${viewingUser.username}${viewingUser.rank.value === 0 ? ' (' + $t('Guest') + ')' : ''}` }}
 				</div>
@@ -192,7 +189,7 @@
 				</div>
 				<div class="uactions">
 					<ul>
-						<li class="privateMessage" @click="privateMessage">
+						<li class="privateMessage" @click="privateMessage(viewingUser)">
 							<i class="fa fa-comment"></i> {{ $t('Private Message') }}
 						</li>
 						<li class="micCall" @click="startVoiceCall">
@@ -214,12 +211,25 @@
 		<div id="privatemessages" v-show="isPrivateMessagesVisible">
 			<div class="goback">
 				<span @click="showRoomInfo"
-					><i class="fa fa-chevron-circle-left" aria-hidden="true"></i>{{ $t('Message Box') }}</span
+					><i class="fa fa-chevron-circle-left" aria-hidden="true"></i>&nbsp;{{ $t('Message Box') }}</span
 				>
 			</div>
 			<div id="messagesContainer">
-				<div id="nomessage" class="message">
+				<div v-if="Object.keys(privateMessages).length === 0" id="nomessage" class="message">
 					<i class="fa fa-exclamation-triangle"></i> {{ $t('Message box is empty') }}
+				</div>
+				<div
+					v-else
+					v-for="(message, i) of privateMessages"
+					:key="i"
+					@click="privateMessage(message[0]?.user)"
+					class="pmbox"
+				>
+					<div class="image"><img src="images/man-profile.png" height="50" alt="Mehmet46" /></div>
+					<div class="info">
+						<div class="name">{{ message[0]?.user.username }}</div>
+						<div class="text">{{ truncateString(message[message.length - 1].text, 25) }}</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -227,12 +237,13 @@
 </template>
 
 <script lang="ts">
-import { swalServerError } from '@/utils';
+import { getProfileImagePath, swalServerError } from '@/utils';
 import axios from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
-import { defineComponent } from 'vue';
-import { IRoom, IUser, IUserForClient } from '@/interfaces/server.interfaces';
+import { defineComponent, Ref } from 'vue';
+import { IRoom, ISendMessage, IUser, IUserForClient } from '@/interfaces/server.interfaces';
 import SettingsVue from './Settings.vue';
+import { SocketEventType } from '@/socket/socket.enum';
 
 export default defineComponent({
 	name: 'Left',
@@ -249,6 +260,7 @@ export default defineComponent({
 		searchUsersText: string;
 		searchAllUsersText: string;
 		searchRoomText: string;
+		roomUserCounts: Record<string, number>;
 	} {
 		return {
 			isRoomListVisible: false,
@@ -263,6 +275,7 @@ export default defineComponent({
 			searchUsersText: '',
 			searchAllUsersText: '',
 			searchRoomText: '',
+			roomUserCounts: {},
 		};
 	},
 	props: {
@@ -282,12 +295,12 @@ export default defineComponent({
 			type: Object as () => IRoom[],
 			required: true,
 		},
-		privateMessageCount: {
-			type: Number,
-			required: true,
-		},
 		isPrivateChatVisible: {
 			type: Boolean,
+			required: true,
+		},
+		privateMessages: {
+			type: Object as () => Record<string, ISendMessage[]>,
 			required: true,
 		},
 	},
@@ -295,18 +308,37 @@ export default defineComponent({
 		'update:user',
 		'update:allUsers',
 		'update:isRightVisible',
-		'update:privateMessageCount',
 		'update:isPrivateChatVisible',
 		'privateChatStarted',
+		'clearRoomMessages',
 	],
 	methods: {
+		getProfileImagePath,
 		startVoiceCall() {},
 		startVideoCall() {},
 		banUser() {},
 		reportUser() {},
-		privateMessage() {
+		async joinRoom(room: IRoom) {
+			let password;
+			if (room.hasPassword) {
+				password = (
+					await Swal.fire({
+						title: 'Enter room password',
+						input: 'password',
+						inputLabel: 'Password',
+						inputPlaceholder: 'Enter room password',
+						inputAttributes: {
+							autocapitalize: 'off',
+							autocorrect: 'off',
+						},
+					})
+				).value;
+			}
+			this.$socket.emit(SocketEventType.JOIN_ROOM, { room, password });
+		},
+		privateMessage(user: IUserForClient) {
 			this.$emit('update:isPrivateChatVisible', true);
-			this.$emit('privateChatStarted', { ...this.viewingUser });
+			this.$emit('privateChatStarted', { ...user });
 		},
 		setAllUnvisibleLeft() {
 			if (this.isAllUserListVisible) {
@@ -515,6 +547,12 @@ export default defineComponent({
 		updateWidth() {
 			this.windowWidth = window.innerWidth;
 		},
+		truncateString(str: string, num: number) {
+			if (str.length <= num) {
+				return str;
+			}
+			return str.slice(0, num) + '...';
+		},
 	},
 	mounted() {
 		window.addEventListener('resize', this.updateWidth);
@@ -523,7 +561,15 @@ export default defineComponent({
 		window.removeEventListener('resize', this.updateWidth);
 	},
 	created() {
-		console.log(this.user);
+		this.$socket.on(SocketEventType.JOIN_ROOM, (room: IRoom) => {
+			this.$emit('clearRoomMessages');
+			this.user.room = room;
+		});
+		this.$socket.on(SocketEventType.ROOM_USER_COUNTS, (data: Record<string, number>) => {
+			this.roomUserCounts = data;
+		});
+
+		this.$socket.emit(SocketEventType.ROOM_USER_COUNTS);
 	},
 	computed: {
 		isMobile(): boolean {
@@ -531,13 +577,14 @@ export default defineComponent({
 		},
 		profileImagePath(): string {
 			if (this.user) {
-				return this.user.profileImage
-					? `uploads/images/${this.user.profileImage}`
-					: `images/${this.user.gender ? 'man' : 'woman'}-profile.png`;
+				return getProfileImagePath(this.user);
 			}
 			return '';
 		},
 		allUsersLength(): number {
+			return this.allUsers.length;
+		},
+		roomUsersLength(): number {
 			return this.allUsers.filter((u) => u.room.id == this.user.room.id).length;
 		},
 		filteredUsers() {

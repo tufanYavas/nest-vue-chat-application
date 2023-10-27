@@ -54,6 +54,11 @@
     "Message Box": "Message Box",
     "Report": "Report",
     "Rooms": "Rooms",
+    "Users": "Users",
     "Chat": "Chat",
-    "Back To Room": "Back To Room"
+    "Back To Room": "Back To Room",
+    "sent a private message": "sent a private message",
+    "Guests can't change profile image": "Guests can't change profile image",
+    "Change font": "Change font",
+    "Send Image": "Send Image"
 }

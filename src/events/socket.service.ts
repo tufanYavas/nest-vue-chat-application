@@ -8,12 +8,53 @@ import { ISendMessage, SocketWithData } from './interfaces';
 import { SocketEventType } from './socket.enum';
 import { UserForSocket } from './user-for-socket';
 import { WsResponse } from '@nestjs/websockets/interfaces/ws-response.interface';
-import { IUserForClient } from '../server.interfaces';
+import { IRoom, IUserForClient } from '../server.interfaces';
 
 @Injectable()
 export class SocketService {
+	server: Server;
+	constructor(
+		@Inject('LoggerService') private readonly logger: LoggerService,
+		private readonly authService: AuthService,
+		private readonly loginLogService: LoginLogService,
+		private readonly settingsService: SettingsService,
+		private readonly roomService: RoomService,
+	) {}
+
+	updateRoomUserCounts(client: SocketWithData | Server) {
+		const rooms = this.server.sockets.adapter.rooms;
+		const result: Record<string, number> = {};
+
+		for (const [roomName, room] of rooms.entries()) {
+			if (!roomName.includes(process.env.ROOM_POSTFIX)) continue;
+			result[roomName.replace(process.env.ROOM_POSTFIX, '')] = room.size;
+		}
+		client.emit(SocketEventType.ROOM_USER_COUNTS, result);
+	}
+
+	updateExtraData(client: SocketWithData, user: IUserForClient) {
+		if (user) {
+			Object.assign(client.data.user, user);
+			this.server.emit(SocketEventType.UPDATE_EXTRA_DATA, client.data.user.getDto());
+		}
+	}
+
+	async joinRoom(client: SocketWithData, data: { room: IRoom; password: string }) {
+		if (!(data && data.room)) return;
+		const room = await this.roomService.findOne(data.room.id);
+		if (room) {
+			if (!room.hasPassword || (room.hasPassword && room.password === data.password)) {
+				await this.removeUserFromAllRooms(client);
+				const roomName = `${room.id}${process.env.ROOM_POSTFIX}`;
+				await client.join(roomName);
+				client.emit(SocketEventType.JOIN_ROOM, room);
+				this.updateRoomUserCounts(this.server);
+			}
+		}
+	}
+
 	sendMessage(client: SocketWithData, data: ISendMessage) {
-		if (data.type === 'ALL_EVENT' || data.type === 'ALL_MESSAGE' || data.type === 'SYSTEM_MESSAGE') {
+		if (data.type === 'ALL_EVENT' || data.type === 'SYSTEM_MESSAGE') {
 			this.server.emit(SocketEventType.SEND_MESSAGE, data);
 		} else if (data.type === 'ROOM_EVENT' || data.type == 'ROOM_MESSAGE') {
 			this.server
@@ -23,6 +64,10 @@ export class SocketService {
 			const targetClient = this.server.sockets.sockets.get(data.to);
 			if (targetClient) {
 				targetClient.emit(SocketEventType.SEND_MESSAGE, data);
+			}
+		} else if (data.type === 'ALL_MESSAGE') {
+			if (data.user.permission.canSendToAll) {
+				this.server.emit(SocketEventType.SEND_MESSAGE, data);
 			}
 		}
 	}
@@ -43,14 +88,6 @@ export class SocketService {
 
 		return { event: SocketEventType.GET_ALL_USERS, data: result };
 	}
-	server: Server;
-	constructor(
-		@Inject('LoggerService') private readonly logger: LoggerService,
-		private readonly authService: AuthService,
-		private readonly loginLogService: LoginLogService,
-		private readonly settingsService: SettingsService,
-		private readonly roomService: RoomService,
-	) {}
 
 	async getIp(client: SocketWithData, data: any) {
 		const user = client.data.user;
@@ -75,8 +112,7 @@ export class SocketService {
 	}
 
 	async removeUserFromAllRooms(client: SocketWithData) {
-		const currentRooms = Object.keys(client.rooms);
-		for (const r of currentRooms) {
+		for (const r of client.rooms) {
 			if (r !== client.id) {
 				client.leave(r);
 			}
@@ -108,7 +144,8 @@ export class SocketService {
 		if (settings.doubleLoginActive || !this.isIpAlreadyLoggedIn(ip)) {
 			const room = await this.roomService.getDefaultRoom();
 			const roomName = `${room.id}${process.env.ROOM_POSTFIX}`;
-			await client.join(roomName);
+			await client.join(roomName); // should be no password in the default room
+			this.updateRoomUserCounts(this.server);
 
 			const username = client.handshake.auth.username;
 			if (!username) {

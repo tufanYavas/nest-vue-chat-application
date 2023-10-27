@@ -71,4 +71,5 @@ export interface IRoom {
 	active: boolean;
 	default: boolean;
 	bg: string;
+	hasPassword: boolean;
 }

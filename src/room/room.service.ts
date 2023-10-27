@@ -12,8 +12,12 @@ export class RoomService {
 		private readonly roomRepository: Repository<Room>,
 	) {}
 
-	getDefaultRoom() {
-		return this.roomRepository.findOneBy({ default: true });
+	async getDefaultRoom() {
+		const room = await this.roomRepository.findOneBy({ default: true });
+		if (room) {
+			room.hasPassword = room.password ? true : false;
+		}
+		return room;
 	}
 
 	create(createRoomDto: CreateRoomDto) {
@@ -24,12 +28,20 @@ export class RoomService {
 		return this.roomRepository.save(room);
 	}
 
-	findAll() {
-		return this.roomRepository.find({});
+	async findAll() {
+		const rooms = await this.roomRepository.find({});
+		for (const room of rooms) {
+			room.hasPassword = room.password ? true : false;
+		}
+		return rooms;
 	}
 
-	findOne(id: number) {
-		return this.roomRepository.findOneBy({ id });
+	async findOne(id: number) {
+		const room = await this.roomRepository.findOneBy({ id });
+		if (room) {
+			room.hasPassword = room.password ? true : false;
+		}
+		return room;
 	}
 
 	async update(id: number, updateRoomDto: UpdateRoomDto) {

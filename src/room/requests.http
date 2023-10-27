@@ -26,7 +26,8 @@ Content-Type: application/json
     "row": 1,
     "active": true,
     "default": true,
-    "bg": "https://www.w3schools.com/tags/img_girl.jpg"
+    "bg": "https://www.w3schools.com/tags/img_girl.jpg",
+    "password": "123"
 }
 
 ### Delete room

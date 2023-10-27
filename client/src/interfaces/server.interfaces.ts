@@ -3,6 +3,8 @@ export interface ISendMessage {
 	text: string;
 	type: 'ROOM_MESSAGE' | 'ALL_MESSAGE' | 'SYSTEM_MESSAGE' | 'PRIVATE_MESSAGE' | 'ROOM_EVENT' | 'ALL_EVENT';
 	to?: string;
+	contentType?: 'IMAGE';
+	contentPath?: string;
 }
 export interface IUserForClient extends IUser {
 	room: IRoom;
@@ -79,4 +81,5 @@ export interface IRoom {
 	active: boolean;
 	default: boolean;
 	bg: string;
+	hasPassword: boolean;
 }

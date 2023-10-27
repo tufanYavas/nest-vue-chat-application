@@ -4,6 +4,8 @@ export enum SocketEventType {
 	USER_DISCONNECTED = 'userDisconnected',
 	SET_USER_DATA = 'setUserData',
 	GET_ALL_USERS = 'getAllUsers',
+	JOIN_ROOM = 'joinRoom',
+	ROOM_USER_COUNTS = 'roomUserCounts',
 
 	ADD_VIEWER = 'addViewer',
 	REMOVE_VIEWER = 'removeViewer',

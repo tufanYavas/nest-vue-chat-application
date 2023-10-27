@@ -1,3 +1,5 @@
+import { IUser, IUserForClient } from './interfaces/server.interfaces';
+
 export function swalServerError(error: any) {
 	let message: string = '';
 	if (error.response.data.message) {
@@ -12,6 +14,13 @@ export function swalServerError(error: any) {
 		message = error.message;
 	}
 	window.Swal.fire(window.$t('Error'), message, 'error');
+}
+
+export function getProfileImagePath(user: IUserForClient | IUser): string {
+	if (!user) return '';
+	return user.profileImage
+		? `uploads/profile-images/${user.profileImage}`
+		: `images/${user.gender ? 'man' : 'woman'}-profile.png`;
 }
 
 export class MutexQueue {

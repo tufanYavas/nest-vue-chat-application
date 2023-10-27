@@ -211,34 +211,7 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	border-radius: 25px;
 }
 
-.emojionearea.emojionearea-inline {
-	height: 50px !important;
-	width: calc(100% - 370px);
-}
-
-.emojionearea.emojionearea-inline > .emojionearea-editor {
-	height: 50px !important;
-	width: 100%;
-}
-
-.emojionearea.emojionearea-inline > .emojionearea-button {
-	left: calc(100% + 45px);
-}
-
-.emojionearea.emojionearea-inline > .emojionearea-editor {
-	font-family: Arial, FontAwesome;
-	padding: 15px 0 0 15px;
-	box-sizing: border-box;
-}
-
-.emojionearea.focused {
-	outline: 0;
-	box-shadow: none;
-	border: 0;
-}
-
-#send input,
-.emojionearea {
+#send input {
 	width: calc(100% - 370px);
 	height: 50px;
 	padding: 10px 30px;
@@ -884,18 +857,10 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 }
 
 @media only screen and (max-width: 1000px) {
-	.emojionearea.emojionearea-inline > .emojionearea-button {
-		left: 100%;
-		display: none;
-	}
 	#adminuserlogs .ipaddress {
 		display: block;
 		font-size: 12px;
 		padding-left: 30px;
-	}
-
-	.emojionearea.emojionearea-inline > .emojionearea-button {
-		left: calc(100% + 35px);
 	}
 
 	#send button {
@@ -1075,19 +1040,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 }
 
 @media only screen and (max-width: 500px) {
-	.emojionearea.emojionearea-inline {
-		width: calc(100% - 180px);
-	}
-
-	.emojionearea.emojionearea-inline > .emojionearea-editor {
-		width: 80%;
-	}
-
-	.emojionearea.emojionearea-inline > .emojionearea-button {
-		left: 100%;
-		display: none;
-	}
-
 	#profile {
 		display: none;
 	}
@@ -1417,18 +1369,6 @@ audio {
 	margin-left: -150px;
 	box-sizing: border-box;
 	text-align: center;
-	display: none;
-}
-
-.emojionearea {
-	position: relative;
-}
-
-.emojionearea-button {
-	position: absolute;
-	left: 0;
-	margin-left: -30px;
-	margin-top: 10px;
 }
 
 #messagebox i {

@@ -21,4 +21,7 @@ export class RoomDto {
 
 	@Expose()
 	bg?: string;
+
+	@Expose()
+	hasPassword: boolean;
 }

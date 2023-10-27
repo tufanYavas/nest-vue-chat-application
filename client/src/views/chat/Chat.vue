@@ -16,13 +16,13 @@
 
 				<div @click="showPrivateMessages" id="messagebox" class="pmboxmobile">
 					<i class="fa fa-comments-o" aria-hidden="true"></i>
-					<div class="messagecounter" id="messagecounter">{{ privateMessageCount }}</div>
+					<div class="messagecounter" id="messagecounter">{{ unreadPrivateMessageCount }}</div>
 				</div>
 
 				<div id="profile">
 					<div @click="showPrivateMessages" id="messagebox">
 						<i class="fa fa-comments-o" aria-hidden="true"></i>
-						<div class="messagecounter" id="messagecounter">{{ privateMessageCount }}</div>
+						<div class="messagecounter" id="messagecounter">{{ unreadPrivateMessageCount }}</div>
 					</div>
 					<div class="profile-name">
 						<span>{{ user?.username }}</span
@@ -30,10 +30,10 @@
 							{{ user?.rank.name }}
 						</span>
 					</div>
-					<div class="profile-image">
+					<div class="profile-image" @click="uploadProfileImageClick">
 						<input
 							id="uploadfile"
-							@change="uploadProfileImage"
+							@change="uploadImage($event, 'PROFILE_IMAGE')"
 							accept=".jpg, .jpeg, .png, .gif"
 							type="file"
 						/>
@@ -49,12 +49,13 @@
 				v-if="user"
 				ref="leftContainer"
 				:rooms="rooms"
+				:privateMessages="privateMessages"
 				v-model:user="user"
 				v-model:allUsers="allUsers"
 				v-model:isRightVisible="isRightVisible"
-				v-model:privateMessageCount="privateMessageCount"
 				v-model:isPrivateChatVisible="isPrivateChatVisible"
 				@privateChatStarted="privateChattingUser = $event"
+				@clearRoomMessages="messages.length = 0"
 			/>
 
 			<transition name="slide">
@@ -89,17 +90,11 @@
 						</div>
 					</div>
 
-					<ChatMessageArea
-						v-if="user"
-						:messages="messages"
-						:user="user"
-						ref="chatContainer"
-						v-show="!isPrivateChatVisible"
-					/>
+					<ChatMessageArea v-if="user" :messages="messages" :user="user" v-show="!isPrivateChatVisible" />
 
 					<ChatMessageArea
 						v-if="user && privateChattingUser"
-						:messages="privateMessages[privateChattingUser.clientId]"
+						:messages="privateMessages[privateChattingUser.clientId] ?? []"
 						:user="user"
 						v-show="isPrivateChatVisible"
 					/>
@@ -107,8 +102,7 @@
 					<div id="send">
 						<div class="inner">
 							<input
-								id="messageinput"
-								@keyup.enter="sendMessage"
+								@keyup.enter="sendMessage()"
 								autocomplete="off"
 								type="text"
 								placeholder="&#xf27b; Mesajınızı buraya yazın..."
@@ -118,6 +112,9 @@
 							<div class="actions">
 								<ul>
 									<li id="actionmenu">
+										<span id="mic" title="Mikrofon" ref="aa" @click="dod">
+											<i id="micload" class="fa fa-smile-o" aria-hidden="true"></i>
+										</span>
 										<span id="mic" title="Mikrofon">
 											<i id="micload" class="fa fa-microphone" aria-hidden="true"></i>
 										</span>
@@ -134,21 +131,18 @@
 											<i style="margin-top: 15px" class="fa fa-chevron-up" aria-hidden="true"></i>
 										</span>
 										<span class="showm">
-											<span id="isend" title="Fotoğraf gönder">
-												<form
-													style="display: inline-block"
-													onsubmit="return false;"
-													id="iuploader"
-													action=""
-													method="post"
-													enctype="multipart/form-data"
-												>
-													<label for="iupload">
-														<i id="rowimage" class="fa fa-image" aria-hidden="true"></i>
-														<input type="file" id="iupload" name="iupload" />
-														<span class="show-xs">Resim gönder</span>
-													</label>
-												</form>
+											<span :title="$t('Send Image')">
+												<label for="iupload">
+													<i class="fa fa-image" aria-hidden="true"></i>
+													<input
+														@change="uploadImage($event, 'CHAT_IMAGE')"
+														accept=".jpg, .jpeg, .png, .gif"
+														type="file"
+														id="iupload"
+														name="iupload"
+													/>
+													<span class="show-xs">{{ $t('Send Image') }}</span>
+												</label>
 											</span>
 											<span id="mrow" title="Mikrofon sırası">
 												<i id="rowload" class="fa fa-hand-paper-o" aria-hidden="true"></i>
@@ -162,9 +156,9 @@
 												<i class="fa fa-file-audio-o" aria-hidden="true"></i>
 												<span class="show-xs">Ses kaydı</span>
 											</span>
-											<span id="fonttype" title="Yazı tipiniz">
+											<span :title="$t('Change font')">
 												<i class="fa fa-font"></i>
-												<span class="show-xs">Yazı tipi</span>
+												<span class="show-xs">{{ $t('Change font') }}</span>
 											</span>
 										</span>
 									</li>
@@ -177,7 +171,7 @@
 							<button
 								id="sendmsg"
 								:style="{ 'background-color': settings.themeColor }"
-								@click="sendMessage"
+								@click="sendMessage()"
 							>
 								<i class="fa fa-paper-plane"></i>
 							</button>
@@ -193,7 +187,7 @@
 			</div>
 		</div>
 
-		<div id="alertbox"></div>
+		<div id="alertbox" v-show="isAlertBoxVisible">{{ alertMessage }}</div>
 
 		<audio id="eb-sound" style="display: none" type="audio/ogg"></audio>
 	</div>
@@ -207,9 +201,10 @@ import { Ref, defineComponent, ref } from 'vue';
 import { IRoom, ISendMessage, IUser, IUserForClient } from '@/interfaces/server.interfaces';
 import { SocketEventType } from '@/socket/socket.enum';
 import SettingsVue from '@/components/Settings.vue';
-import { swalServerError } from '@/utils';
+import { getProfileImagePath, swalServerError } from '@/utils';
 import LeftVue from '@/components/Left.vue';
 import ChatMessageAreaVue from '@/components/ChatMessageArea.vue';
+import { EmojiButton } from '@joeattardi/emoji-button';
 
 export default defineComponent({
 	name: 'Chat',
@@ -228,10 +223,13 @@ export default defineComponent({
 		message: string;
 		rooms: IRoom[];
 		user: IUserForClient | null;
-		privateMessageCount: number;
+		unreadPrivateMessageCount: number;
 		isPrivateChatVisible: boolean;
 		privateChattingUser: IUserForClient | undefined;
 		privateMessages: Ref<Record<string, ISendMessage[]>>;
+		alertMessage: string;
+		isAlertBoxVisible: boolean;
+		picker: EmojiButton;
 	} {
 		return {
 			settings: {
@@ -245,18 +243,36 @@ export default defineComponent({
 			message: '',
 			rooms: [],
 			user: null,
-			privateMessageCount: 0,
+			unreadPrivateMessageCount: 0,
 			isPrivateChatVisible: false,
 			privateChattingUser: undefined,
 			privateMessages: ref<Record<string, ISendMessage[]>>({}),
+			alertMessage: '',
+			isAlertBoxVisible: false,
+			picker: new EmojiButton({ autoHide: false, twemojiOptions: true }),
 		};
 	},
 	props: {},
 	methods: {
+		dod() {
+			this.picker.togglePicker(this.$refs.aa as HTMLElement);
+		},
+		showAlertMessage(message: string) {
+			this.alertMessage = message;
+			this.isAlertBoxVisible = true;
+			// TODO if notifications allowed ring sound
+			setTimeout(() => {
+				this.isAlertBoxVisible = false;
+			}, 3000);
+		},
 		showPrivateMessages() {
+			this.unreadPrivateMessageCount = 0;
 			(this.$refs.leftContainer as InstanceType<typeof LeftVue>).showPrivateMessages();
 		},
-		sendMessage() {
+		sendMessage(
+			contentType: ISendMessage['contentType'] = undefined,
+			contentPath: ISendMessage['contentType'] = undefined,
+		) {
 			const message: ISendMessage = {
 				user: this.user!,
 				text: this.message.trim(),
@@ -265,11 +281,19 @@ export default defineComponent({
 					this.isPrivateChatVisible && this.privateChattingUser
 						? this.privateChattingUser.clientId
 						: undefined,
+				contentType,
+				contentPath,
 			};
 
-			if (!message.text.length) return;
+			console.log({ message, length: message.text.length, contentType });
+			if (contentType !== 'IMAGE') this.message = '';
+
+			if (!message.text.length && !contentType) return;
 			this.$socket.emit(SocketEventType.SEND_MESSAGE, message);
-			this.message = '';
+			console.log('emit');
+			if (message.type == 'PRIVATE_MESSAGE') {
+				this.addPrivateMessage(message);
+			}
 		},
 		syncUsers(users: IUserForClient[]) {
 			this.allUsers = this.allUsers.filter((roomUser) =>
@@ -295,6 +319,11 @@ export default defineComponent({
 			if (this.privateMessages[message.user.clientId].length > 200) {
 				this.privateMessages[message.user.clientId].shift();
 			}
+
+			if (!this.isPrivateChatVisible) {
+				this.unreadPrivateMessageCount++;
+				this.showAlertMessage(`${message.user.username} ${this.$t('sent a private message')}`);
+			}
 		},
 		removeUser(clientId: string) {
 			this.allUsers = this.allUsers.filter((user) => user.clientId !== clientId);
@@ -305,15 +334,27 @@ export default defineComponent({
 				this.messages.shift();
 			}
 		},
-		async uploadProfileImage(event: any) {
+
+		async uploadProfileImageClick(event: any) {
+			if (this.user?.rank.value === 0) {
+				event.preventDefault();
+				return Swal.fire(this.$t('Info'), this.$t("Guests can't change profile image"), 'info');
+			}
+		},
+		async uploadImage(event: any, type: 'PROFILE_IMAGE' | 'CHAT_IMAGE') {
 			const file = event.target.files[0];
 			const formData = new FormData();
 			formData.append('file', file);
-
+			const url = type == 'PROFILE_IMAGE' ? '/user/uploadProfileImage' : '/message/uploadChatImage';
 			await axios
-				.post('/user/uploadProfileImage', formData)
+				.post(url, formData)
 				.then((response: AxiosResponse) => {
-					this.user!.profileImage = response.data.profileImage;
+					if (type === 'PROFILE_IMAGE') {
+						this.user!.profileImage = response.data.profileImage;
+					} else if (type === 'CHAT_IMAGE') {
+						const imagePath = response.data.imagePath;
+						this.sendMessage('IMAGE', imagePath);
+					}
 				})
 				.catch((error) => {
 					swalServerError(error);
@@ -395,14 +436,12 @@ export default defineComponent({
 			console.error(error);
 		}
 	},
-	async created() {},
+	async created() {
+		this.picker.on('emoji', (selection) => {
+			this.message += selection.emoji;
+		});
+	},
 	watch: {
-		messages() {
-			this.$nextTick(() => {
-				const chatContainer = this.$refs.chatContainer as HTMLDivElement;
-				chatContainer.scrollTop = chatContainer.scrollHeight;
-			});
-		},
 		user: {
 			handler(user) {
 				console.log('update user', { user: this.user });
@@ -413,12 +452,7 @@ export default defineComponent({
 	},
 	computed: {
 		profileImagePath(): string {
-			if (this.user) {
-				return this.user.profileImage
-					? `uploads/images/${this.user.profileImage}`
-					: `images/${this.user.gender ? 'man' : 'woman'}-profile.png`;
-			}
-			return '';
+			return getProfileImagePath(this.user!);
 		},
 	},
 });
@@ -426,7 +460,7 @@ export default defineComponent({
 
 <style>
 @import '@/assets/css/reset.css';
-@import '@/assets/css/emojionearea.min.css';
+/*@import '@/assets/css/emojionearea.min.css';*/
 @import '@/assets/css/jquery-ui.css';
 @import '@/assets/css/style-chat.css';
 
