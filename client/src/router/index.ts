@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
-import Chat from '../views/chat/Chat.vue';
+import Chat from '../views/Chat.vue';
 import axios from 'axios';
 
 const routes = [

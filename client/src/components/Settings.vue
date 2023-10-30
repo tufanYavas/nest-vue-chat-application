@@ -65,7 +65,7 @@ import { swalServerError } from '@/utils';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { defineComponent } from 'vue';
-import { IUser } from '@/interfaces/server.interfaces';
+import { IUser } from '@/types';
 
 export default defineComponent({
 	name: 'Settings',

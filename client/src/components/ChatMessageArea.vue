@@ -37,7 +37,7 @@
 </template>
 
 <script lang="ts">
-import { ISendMessage, IUserForClient } from '@/interfaces/server.interfaces';
+import { ISendMessage, IUserForClient } from '@/types';
 import { SocketEventType } from '@/socket/socket.enum';
 import { defineComponent } from 'vue';
 import MessageVue from '@/components/Message.vue';

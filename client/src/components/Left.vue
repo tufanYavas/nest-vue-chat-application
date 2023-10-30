@@ -117,7 +117,7 @@
 								<i class="fa fa-microphone"></i>
 							</div>
 							<div class="icon">
-								<i class="fa fa-video-camera"></i>
+								<i class="fas fa-video"></i>
 							</div>
 						</div>
 					</div>
@@ -162,7 +162,7 @@
 								<i class="fa fa-microphone"></i>
 							</div>
 							<div class="icon">
-								<i class="fa fa-video-camera"></i>
+								<i class="fas fa-video"></i>
 							</div>
 						</div>
 					</div>
@@ -192,11 +192,31 @@
 						<li class="privateMessage" @click="privateMessage(viewingUser)">
 							<i class="fa fa-comment"></i> {{ $t('Private Message') }}
 						</li>
-						<li class="micCall" @click="startVoiceCall">
+						<li
+							class="micCall"
+							@click="
+								startCall({
+									calledUser: viewingUser,
+									callerUser: user,
+									mediaType: 'VOICE',
+									callType: 'PRIVATE',
+								})
+							"
+						>
 							<i class="fa fa-microphone"></i> {{ $t('Voice Call') }}
 						</li>
-						<li class="webcamCall" @click="startVideoCall">
-							<i class="fa fa-video-camera"></i> {{ $t('Video Call') }}
+						<li
+							class="webcamCall"
+							@click="
+								startCall({
+									calledUser: viewingUser,
+									callerUser: user,
+									mediaType: 'VIDEO',
+									callType: 'PRIVATE',
+								})
+							"
+						>
+							<i class="fas fa-video"></i> {{ $t('Video Call') }}
 						</li>
 						<li @click="banUser"><i class="fa fa-ban"></i> {{ $t('Ban') }}</li>
 						<li @click="reportUser"><i class="fa fa-flag"></i> {{ $t('Report') }}</li>
@@ -225,7 +245,13 @@
 					@click="privateMessage(message[0]?.user)"
 					class="pmbox"
 				>
-					<div class="image"><img src="images/man-profile.png" height="50" alt="Mehmet46" /></div>
+					<div class="image">
+						<img
+							:src="getProfileImagePath(message[0]?.user)"
+							height="50"
+							:alt="message[0]?.user.username"
+						/>
+					</div>
 					<div class="info">
 						<div class="name">{{ message[0]?.user.username }}</div>
 						<div class="text">{{ truncateString(message[message.length - 1].text, 25) }}</div>
@@ -241,7 +267,7 @@ import { getProfileImagePath, swalServerError } from '@/utils';
 import axios from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { defineComponent, Ref } from 'vue';
-import { IRoom, ISendMessage, IUser, IUserForClient } from '@/interfaces/server.interfaces';
+import { Call, IRoom, ISendMessage, IUser, IUserForClient } from '@/types';
 import SettingsVue from './Settings.vue';
 import { SocketEventType } from '@/socket/socket.enum';
 
@@ -311,11 +337,13 @@ export default defineComponent({
 		'update:isPrivateChatVisible',
 		'privateChatStarted',
 		'clearRoomMessages',
+		'call',
 	],
 	methods: {
 		getProfileImagePath,
-		startVoiceCall() {},
-		startVideoCall() {},
+		startCall(call: Call) {
+			this.$emit('call', call);
+		},
 		banUser() {},
 		reportUser() {},
 		async joinRoom(room: IRoom) {

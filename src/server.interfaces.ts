@@ -1,5 +1,6 @@
 export interface IUserForClient extends IUser {
 	room: IRoom;
+	clientId: string;
 }
 export interface IRank {
 	name: string;

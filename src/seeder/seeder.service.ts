@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, LoggerService } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { RankService } from '../rank/rank.service';
 import { StatusService } from '../status/status.service';
@@ -13,6 +13,7 @@ export class SeederService {
 		private readonly statusService: StatusService,
 		private readonly roomService: RoomService,
 		private readonly settingsService: SettingsService,
+		@Inject('LoggerService') private readonly loggerService: LoggerService,
 	) {}
 
 	async run() {
@@ -21,21 +22,21 @@ export class SeederService {
 		await this.seedStatus();
 		await this.seedUsers();
 		await this.seedRooms();
-		console.log('All data seeded');
+		this.loggerService.log('All data seeded');
 	}
 
 	async seedSettings() {
 		await this.settingsService.create({
 			id: 1,
 		});
-		console.log('Settings seeded');
+		this.loggerService.log('Settings seeded');
 	}
 
 	async seedStatus() {
 		await this.statusService.create({ name: 'Online' });
 		await this.statusService.create({ name: 'Offline' });
 		await this.statusService.create({ name: 'AFK' });
-		console.log('Statusses seeded');
+		this.loggerService.log('Statusses seeded');
 	}
 
 	async seedRanks() {
@@ -46,7 +47,7 @@ export class SeederService {
 		await this.rankService.create({ value: 4, name: 'Super Admin' });
 		await this.rankService.create({ value: 5, name: 'Chat Admin' });
 		await this.rankService.create({ value: 6, name: 'Root' });
-		console.log('Ranks seeded');
+		this.loggerService.log('Ranks seeded');
 	}
 
 	async seedUsers() {
@@ -70,7 +71,7 @@ export class SeederService {
 			password: '',
 		});
 
-		console.log('Users seeded');
+		this.loggerService.log('Users seeded');
 	}
 
 	async seedRooms() {
@@ -83,6 +84,6 @@ export class SeederService {
 			bg: null,
 			password: null,
 		}),
-			console.log('Rooms seeded');
+			this.loggerService.log('Rooms seeded');
 	}
 }

@@ -22,10 +22,10 @@
 </template>
 
 <script lang="ts">
-import { IUserForClient } from '@/interfaces/server.interfaces';
+import { IUserForClient } from '@/types';
 import axios from 'axios';
 import { defineComponent } from 'vue';
-import { IStatus } from '@/interfaces/server.interfaces';
+import { IStatus } from '@/types';
 
 export default defineComponent({
 	name: 'Status',

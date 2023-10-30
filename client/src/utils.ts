@@ -1,4 +1,4 @@
-import { IUser, IUserForClient } from './interfaces/server.interfaces';
+import { IUser, IUserForClient } from '@/types';
 
 export function swalServerError(error: any) {
 	let message: string = '';

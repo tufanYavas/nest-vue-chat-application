@@ -12,15 +12,9 @@ import { Server } from 'socket.io';
 import { SocketEventType } from './socket.enum';
 import { ISendMessage, SocketWithData } from './interfaces';
 import { SocketService } from './socket.service';
-import { IRoom, IUserForClient } from 'src/server.interfaces';
+import { IRoom, IUserForClient } from '../server.interfaces';
 
-@WebSocketGateway(3131, {
-	cors: {
-		origin: 'http://localhost:8081',
-		methods: ['GET', 'POST'],
-		credentials: true,
-	},
-})
+@WebSocketGateway()
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	constructor(private socketService: SocketService) {
 		this.socketService.server = this.server;
@@ -28,6 +22,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@WebSocketServer()
 	server: Server;
+
+	@SubscribeMessage(SocketEventType.CALL_ENDED)
+	async privateCallEnded(@ConnectedSocket() client: SocketWithData) {
+		return this.socketService.privateCallEnded(client);
+	}
+
+	@SubscribeMessage(SocketEventType.PRIVATE_CALL)
+	async privateCall(@ConnectedSocket() client: SocketWithData, @MessageBody() data: { user: IUserForClient }) {
+		return this.socketService.privateCall(client, data);
+	}
 
 	@SubscribeMessage(SocketEventType.ROOM_USER_COUNTS)
 	async updateRoomUserCounts(@ConnectedSocket() client: SocketWithData) {

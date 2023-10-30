@@ -21,7 +21,7 @@ import { LoginGuestDto } from '../users/dtos/login-guest.dto';
 import { LoginUserDto } from '../users/dtos/login-user.dto';
 import { UserDto } from '../users/dtos/user.dto';
 import { Serialize } from '../interceptors/serialize.interceptor';
-import { SettingsService } from 'src/settings/settings.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Controller('auth')
 @Serialize(UserDto)

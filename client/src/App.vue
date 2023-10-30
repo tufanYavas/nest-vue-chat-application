@@ -15,9 +15,6 @@ export default defineComponent({
 	},
 	created() {
 		window.$t = this.$t;
-		let script = document.createElement('script');
-		script.setAttribute('src', './plugins.js');
-		document.head.appendChild(script);
 	},
 });
 </script>

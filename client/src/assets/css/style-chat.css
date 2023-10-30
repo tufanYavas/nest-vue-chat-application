@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css?family=Oswald:200,300,400,500,600,700&subset=latin-ext');
-@import url('./font-awesome.min.css');
 
 html,
 body {
@@ -219,7 +218,7 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	font-family: inherit;
 	font-weight: 400;
 	outline: 0;
-	font-family: Arial, FontAwesome;
+	font-family: Arial;
 	border: 0;
 	float: left;
 	background: transparent;
@@ -331,7 +330,7 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	border-radius: 7px;
 	text-align: center;
 	color: #fff;
-	padding: 3px 0 0;
+	padding: 1px 0 0;
 	top: 5px;
 	position: absolute;
 	font-size: 6pt;
@@ -483,7 +482,7 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	height: 50px;
 	box-sizing: border-box;
 	font-family: inherit;
-	font-family: Oswald, FontAwesome;
+	font-family: Oswald;
 	font-weight: 300;
 	font-size: 10pt;
 	text-align: left;
@@ -1179,15 +1178,12 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 
 .broadcast {
 	float: right;
-	width: 240px;
-	height: 180px;
 	border-radius: 20px;
 	border: 4px solid #fff;
 	-webkit-box-shadow: 0px 0px 23px 3px rgba(0, 0, 0, 0.75);
 	-moz-box-shadow: 0px 0px 23px 3px rgba(0, 0, 0, 0.75);
 	box-shadow: 0px 0px 23px 3px rgba(0, 0, 0, 0.75);
 	overflow: hidden;
-	margin: 20px 20px 0 0;
 	position: relative;
 	background: rgba(255, 255, 255, 0.8);
 }
@@ -1197,7 +1193,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	height: 30px;
 	border-radius: 15px;
 	background: rgba(255, 255, 255, 0.9);
-	position: absolute;
 	cursor: pointer;
 	z-index: 3;
 	box-sizing: border-box;
@@ -1207,9 +1202,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	padding-top: 6px;
 	text-transform: uppercase;
 	display: none;
-	bottom: 10px;
-	left: 50%;
-	margin-left: -15px;
 }
 
 .broadcast .close {
@@ -1264,7 +1256,7 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	z-index: 0;
 }
 
-.broadcast .viewers {
+.broadcast .username {
 	width: auto;
 	display: inline;
 	max-width: 250px;
@@ -1280,15 +1272,6 @@ ul#statusmenu::-webkit-scrollbar-thumb {
 	background: rgba(255, 255, 255, 0.8);
 	border-radius: 3px;
 	padding: 5px;
-}
-
-.broadcast .viewers .viewersname {
-	margin: 1px 0 0 10px;
-}
-
-.broadcast .viewers .viewersname,
-.broadcast .viewers .viewerscount {
-	float: left;
 }
 
 .broadcast .close:hover,

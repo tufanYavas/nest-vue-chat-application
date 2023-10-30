@@ -145,12 +145,9 @@ export default defineComponent({
 	},
 });
 
-// @import '@/assets/css/style.css';
 </script>
 
 <style scoped>
 @import '@/assets/css/animate.css';
-/*@import '@/assets/css/ionicons.min';*/
 @import '@/assets/css/login.css';
-@import '@/assets/css/magnific-popup.css';
 </style>

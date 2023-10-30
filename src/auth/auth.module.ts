@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { LoginlogModule } from '../login-log/login-log.module';
-import { SettingsModule } from 'src/settings/settings.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
 	imports: [UsersModule, LoginlogModule, SettingsModule],

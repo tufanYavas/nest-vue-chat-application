@@ -1,8 +1,8 @@
 import { Inject, Injectable, LoggerService } from '@nestjs/common';
-import { AuthService } from 'src/auth/auth.service';
-import { LoginLogService } from 'src/login-log/login-log.service';
-import { RoomService } from 'src/room/room.service';
-import { SettingsService } from 'src/settings/settings.service';
+import { AuthService } from '../auth/auth.service';
+import { LoginLogService } from '../login-log/login-log.service';
+import { RoomService } from '../room/room.service';
+import { SettingsService } from '../settings/settings.service';
 import { Server } from 'socket.io';
 import { ISendMessage, SocketWithData } from './interfaces';
 import { SocketEventType } from './socket.enum';
@@ -20,6 +20,40 @@ export class SocketService {
 		private readonly settingsService: SettingsService,
 		private readonly roomService: RoomService,
 	) {}
+
+	privateCallEnded(client: SocketWithData) {
+		const callerClient = client.data.privateChatting?.callerClient;
+		const calledClient = client.data.privateChatting?.calledClient;
+		if (callerClient) {
+			callerClient.emit(SocketEventType.CALL_ENDED);
+			callerClient.data.privateChatting = null;
+		}
+		if (calledClient) {
+			calledClient.emit(SocketEventType.CALL_ENDED);
+			calledClient.data.privateChatting = null;
+		}
+	}
+
+	privateCall(client: SocketWithData, data: { user: IUserForClient }) {
+		const calledClient = this.server.sockets.sockets.get(data.user.clientId) as SocketWithData;
+		if (calledClient) {
+			// TODO: control the called banned the caller
+			if (calledClient.data.privateChatting) {
+				return 'User is not available';
+			} else {
+				const privateChatting = {
+					caller: client.data.user,
+					called: calledClient.data.user,
+					callerClient: client,
+					calledClient,
+				};
+				client.data.privateChatting = privateChatting;
+				calledClient.data.privateChatting = privateChatting;
+				return false;
+			}
+		}
+		return 'User not found';
+	}
 
 	updateRoomUserCounts(client: SocketWithData | Server) {
 		const rooms = this.server.sockets.adapter.rooms;
@@ -61,7 +95,7 @@ export class SocketService {
 				.to(`${client.data.user.room.id}${process.env.ROOM_POSTFIX}`)
 				.emit(SocketEventType.SEND_MESSAGE, data);
 		} else if (data.type === 'PRIVATE_MESSAGE') {
-			const targetClient = this.server.sockets.sockets.get(data.to);
+			const targetClient = this.server.sockets.sockets.get(data.toClientId);
 			if (targetClient) {
 				targetClient.emit(SocketEventType.SEND_MESSAGE, data);
 			}
@@ -148,6 +182,7 @@ export class SocketService {
 			this.updateRoomUserCounts(this.server);
 
 			const username = client.handshake.auth.username;
+			const gender = client.handshake.auth.gender;
 			if (!username) {
 				this.logger.log(`username is not valid`);
 				return client.disconnect();
@@ -158,7 +193,7 @@ export class SocketService {
 				ip,
 				client.id,
 				user.id == -1 ? username : user.username,
-				user.gender,
+				gender,
 				user.about,
 				user.profileImage,
 				user.banned,

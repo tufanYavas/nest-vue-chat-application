@@ -3,12 +3,7 @@ const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
 	transpileDependencies: true,
-	// plugins: [
-	//   new webpack.ProvidePlugin({
-	//     $: 'jquery',
-	//     jquery: 'jquery',
-	//     'window.jQuery': 'jquery',
-	//     jQuery: 'jquery',
-	//   }),
-	// ],
+	devServer: {
+		allowedHosts: ['localhost', new URL(process.env.VUE_APP_FRONTEND_URL).hostname, '192.168.1.1'],
+	},
 });

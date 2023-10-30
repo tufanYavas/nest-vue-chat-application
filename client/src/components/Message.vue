@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts">
-import { ISendMessage } from '@/interfaces/server.interfaces';
+import { ISendMessage } from '@/types';
 import { getProfileImagePath } from '@/utils';
 import { defineComponent } from 'vue';
 

@@ -99,6 +99,7 @@ export class UsersController {
 		});
 		if (user.id == -1) {
 			user.username = session.user.username;
+			user.gender = session.user.gender;
 		}
 		return user;
 	}

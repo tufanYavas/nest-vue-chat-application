@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { randomBytes, scrypt as _scrypt } from 'crypto';
 import { promisify } from 'util';
 
@@ -23,3 +24,9 @@ export const comparePasswords = async (hashedPassword: string, password: string)
 	}
 	return true;
 };
+
+export function getOrigins(configService: ConfigService, type: string) {
+	const origins = configService.get<string>(type);
+	const originsArray = origins.split(',');
+	return originsArray;
+}

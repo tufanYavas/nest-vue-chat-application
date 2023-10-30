@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Inject, LoggerServi
 import { UsersService } from '../users/users.service';
 import { parse } from 'cookie';
 import { User } from '../users/entities/user.entity';
-import { comparePasswords } from 'src/utils';
+import { comparePasswords } from '../utils';
 
 @Injectable()
 export class AuthService {
