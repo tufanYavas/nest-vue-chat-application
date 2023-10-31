@@ -1,7 +1,7 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PeerServer } from 'peer';
-import { getOrigins } from 'src/utils';
+import { getOrigins } from '../utils';
 
 @Module({})
 export class PeerServerModule implements OnModuleInit {

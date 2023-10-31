@@ -15,6 +15,7 @@ async function bootstrap() {
 	const seeder = app.get(SeederService);
 	await seeder.run();
 	await app.close();
+	process.exit(0);
 }
 
 bootstrap();

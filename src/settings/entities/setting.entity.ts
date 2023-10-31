@@ -14,7 +14,7 @@ export class Setting {
 	@Column({ default: '#d13131' })
 	themeColor: string;
 
-	@Column({ default: false })
+	@Column({ default: true })
 	doubleLoginActive: boolean;
 
 	@Column({ default: true })
