@@ -8,13 +8,17 @@
 					Konsol Paneli
 				</li></a
 			>
-			<a v-if="user.rank.value > 0" href="" onclick="showUserProfile();" title="Profil Ayarları"
+			<a
+				v-if="user.rank.value > 0"
+				href=""
+				@click.prevent="$emit('showProfileinfo', user.clientId)"
+				title="Profil Ayarları"
 				><li><i class="fa fa-user"></i> Profil Ayaları</li></a
 			>
 			<a v-if="user.rank.value == 0" href="#" @click="showRegisterForm" :title="$t('Register')"
 				><li><i class="fa fa-clipboard"></i> {{ $t('Register') }}</li></a
 			>
-			<a class="d-hidden" href="" onclick="showPrivateMessages();" title="Mesaj Kutusu"
+			<a class="d-hidden" href="" @click.prevent="$emit('showPrivateMessages')" title="Mesaj Kutusu"
 				><li>
 					<i class="fa fa-comments-o" aria-hidden="true"></i>
 					Mesaj Kutusu (<span class="messagecounter" id="messagecounter">0</span>)
@@ -23,7 +27,7 @@
 			<a href="" onclick="showMicCamSettings();" title="Mikrofon/Kamera Ayarları"
 				><li><i class="fa fa-cog"></i> Mikrofon/Kamera</li></a
 			>
-			<a v-if="user.permission.canSendToAll" href="#" onclick="sendToAll();"
+			<a v-if="user.permission.canSendToAll" href="#" @click="$emit('sendToAll')"
 				><li><i class="fa fa-comment"></i> Tüm odalara mesaj</li></a
 			>
 			<a href="#" @click.prevent="$emit('resetChat')"
@@ -65,7 +69,7 @@ import { swalServerError } from '@/utils';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { defineComponent } from 'vue';
-import { IUser } from '@/types';
+import { IUserForClient } from '@/types';
 
 export default defineComponent({
 	name: 'Settings',
@@ -78,11 +82,11 @@ export default defineComponent({
 	},
 	props: {
 		user: {
-			type: Object as () => IUser,
+			type: Object as () => IUserForClient,
 			required: true,
 		},
 	},
-	emits: ['resetChat', 'update:user'],
+	emits: ['resetChat', 'update:user', 'showProfileinfo', 'showPrivateMessages', 'sendToAll'],
 	methods: {
 		async logout() {
 			await axios.post('/auth/signout');

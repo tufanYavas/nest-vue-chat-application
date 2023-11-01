@@ -12,7 +12,15 @@
 
 				<Status v-if="user" v-model:currentStatus="user.status" />
 
-				<Settings v-if="user" ref="settingsComponent" v-model:user="user" @resetChat="messages.length = 0" />
+				<Settings
+					v-if="user"
+					ref="settingsComponent"
+					v-model:user="user"
+					@resetChat="messages.length = 0"
+					@showProfileinfo="showProfileinfo($event)"
+					@showPrivateMessages="showPrivateMessages"
+					@sendToAll="sendMessage({ messageType: 'ALL_MESSAGE' })"
+				/>
 
 				<div @click="showPrivateMessages" id="messagebox" class="pmboxmobile">
 					<i class="far fa-comments" aria-hidden="true"></i>
@@ -47,7 +55,7 @@
 
 			<Left
 				v-if="user"
-				ref="leftContainer"
+				ref="left"
 				:rooms="rooms"
 				:privateMessages="privateMessages"
 				v-model:user="user"
@@ -202,7 +210,7 @@ import StatusVue from '@/components/Status.vue';
 import axios, { AxiosResponse } from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { Ref, defineComponent, ref } from 'vue';
-import { Call, IRoom, ISendMessage, IUser, IUserForClient } from '@/types';
+import { Call, IRoom, ISendMessage, IUser, IUserForClient, MessageType } from '@/types';
 import { SocketEventType } from '@/socket/socket.enum';
 import SettingsVue from '@/components/Settings.vue';
 import { getProfileImagePath, swalServerError } from '@/utils';
@@ -263,6 +271,9 @@ export default defineComponent({
 		dod() {
 			this.picker.togglePicker(this.$refs.aa as HTMLElement);
 		},
+		showProfileinfo(clientId: string) {
+			(this.$refs.left as InstanceType<typeof LeftVue>).showProfileinfo(clientId);
+		},
 		call(call: Call) {
 			(this.$refs.broadcastManager as InstanceType<typeof BroadcastManager>).startCall(call);
 		},
@@ -276,27 +287,31 @@ export default defineComponent({
 		},
 		showPrivateMessages() {
 			this.unreadPrivateMessageCount = 0;
-			(this.$refs.leftContainer as InstanceType<typeof LeftVue>).showPrivateMessages();
+			(this.$refs.left as InstanceType<typeof LeftVue>).showPrivateMessages();
 		},
 		sendMessage(
-			contentType: ISendMessage['contentType'] = undefined,
-			contentPath: ISendMessage['contentType'] = undefined,
+			options: {
+				contentType?: ISendMessage['contentType'];
+				contentPath?: ISendMessage['contentType'];
+				messageType?: MessageType;
+			} = {},
 		) {
 			const message: ISendMessage = {
 				user: this.user!,
 				text: this.message.trim(),
 				type: this.isPrivateChatVisible ? 'PRIVATE_MESSAGE' : 'ROOM_MESSAGE',
 				toClientId:
-					this.isPrivateChatVisible && this.privateChattingUser
+					options.messageType ??
+					(this.isPrivateChatVisible && this.privateChattingUser
 						? this.privateChattingUser.clientId
-						: undefined,
-				contentType,
-				contentPath,
+						: undefined),
+				contentType: options.contentType,
+				contentPath: options.contentPath,
 			};
 
-			if (contentType !== 'IMAGE') this.message = '';
+			if (options.contentType !== 'IMAGE') this.message = '';
 
-			if (!message.text.length && !contentType) return;
+			if (!message.text.length && !options.contentType) return;
 			this.$socket.emit(SocketEventType.SEND_MESSAGE, message);
 			if (message.type == 'PRIVATE_MESSAGE') {
 				this.addPrivateMessage(message);
@@ -360,7 +375,7 @@ export default defineComponent({
 						this.user!.profileImage = response.data.profileImage;
 					} else if (type === 'CHAT_IMAGE') {
 						const imagePath = response.data.imagePath;
-						this.sendMessage('IMAGE', imagePath);
+						this.sendMessage({ contentType: 'IMAGE', contentPath: imagePath });
 					}
 				})
 				.catch((error) => {

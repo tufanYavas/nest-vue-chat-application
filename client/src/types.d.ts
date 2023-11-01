@@ -1,6 +1,5 @@
 import { Socket } from 'socket.io-client';
 import Swal from 'sweetalert2';
-import { Socket } from 'socket.io-client';
 import { $t } from 'vue-i18n';
 import { MediaConnection } from 'peerjs';
 
@@ -60,10 +59,18 @@ interface MediaStreamWrapper {
 	isCaller: boolean;
 }
 
+declare type MessageType =
+	| 'ROOM_MESSAGE'
+	| 'ALL_MESSAGE'
+	| 'SYSTEM_MESSAGE'
+	| 'PRIVATE_MESSAGE'
+	| 'ROOM_EVENT'
+	| 'ALL_EVENT';
+
 interface ISendMessage {
 	user: IUserForClient;
 	text: string;
-	type: 'ROOM_MESSAGE' | 'ALL_MESSAGE' | 'SYSTEM_MESSAGE' | 'PRIVATE_MESSAGE' | 'ROOM_EVENT' | 'ALL_EVENT';
+	type: MessageType;
 	toClientId?: string;
 	contentType?: 'IMAGE';
 	contentPath?: string;

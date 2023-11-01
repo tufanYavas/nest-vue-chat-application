@@ -25,14 +25,14 @@
 						}}
 					</span>
 					<div class="mute-container">
-						<div v-if="isVideo" @click="muteAudio" class="mute">
+						<div @click="muteAudio" class="mute">
 							<i
 								class="fa"
 								:class="{ 'fa-microphone': !audioMuted, 'fa-microphone-slash': audioMuted }"
 								aria-hidden="true"
 							></i>
 						</div>
-						<div @click="muteVideo" class="mute">
+						<div v-if="isVideo" @click="muteVideo" class="mute">
 							<i
 								class="fas"
 								:class="{ 'fa-video': !videoMuted, 'fa-video-slash': videoMuted }"
@@ -44,7 +44,6 @@
 						v-if="isVideo"
 						autoplay="true"
 						playsinline="true"
-						muted="false"
 						:srcObject.prop="streamWrapper.stream"
 					></video>
 					<video v-else autoplay="true" playsinline="true" :srcObject.prop="streamWrapper.stream"></video>

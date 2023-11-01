@@ -183,7 +183,6 @@ export default defineComponent({
 					this.videoStreams.push(streamWrapper);
 				}
 			}
-			console.log({ remoteStream: streamWrapper });
 		},
 		startCall(call: Call) {
 			if (!call.calledUser.clientId) return;
@@ -205,8 +204,7 @@ export default defineComponent({
 						allowOutsideClick: false,
 					}).then((result: SweetAlertResult) => {
 						this.callSound.pause();
-						console.log({ result });
-						if (result.isConfirmed || result.isDismissed) {
+						if (result.isConfirmed) {
 							this.$socket.emit(SocketEventType.CALL_ENDED);
 							if (myStream) {
 								this.removeStream(myStream);

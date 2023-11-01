@@ -5,6 +5,11 @@ Written using Nestjs, Vue 3, socket.io and peerjs
 
 ## Installation
 
+To get the project running in your local development environment:
+
+Rename the ```.env.development.example``` file to ```.env.development``` and fill in your own settings.\
+Similarly, in the client folder, rename the ```.env.example``` file to ```client/.env``` and make the necessary adjustments.
+
 ```bash
 $ npm i
 $ npm run seed
