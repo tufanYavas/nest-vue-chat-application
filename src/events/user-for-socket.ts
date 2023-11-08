@@ -5,6 +5,7 @@ import { IUserForSocket } from './interfaces';
 
 export class UserForSocket implements IUserForSocket {
 	constructor(
+		public id: number,
 		public room: IRoom,
 		public ip: string,
 		public clientId: string,

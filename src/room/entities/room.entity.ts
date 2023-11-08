@@ -15,13 +15,10 @@ export class Room {
 	@Column({ nullable: true })
 	slogan: string;
 
-	@Column({ default: true })
-	active: boolean;
-
 	@Column({ default: false })
 	default: boolean;
 
-	@Column({ nullable: true })
+	@Column({ nullable: true, default: 'https://wallpapercave.com/wp/wp4410724.jpg' })
 	bg: string;
 
 	@Column({ nullable: true })

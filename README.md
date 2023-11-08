@@ -1,6 +1,6 @@
 ## Description
 
-A chat website example\
+A multi language chat website example\
 Written using Nestjs, Vue 3, socket.io and peerjs
 
 ## Installation

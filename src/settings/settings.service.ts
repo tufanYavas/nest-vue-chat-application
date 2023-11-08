@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UpdateSettingDto } from './dto/update-setting.dto';
+import { UpdateSettingDto } from '../admin/dtos/update-setting.dto';
 import { Setting } from './entities/setting.entity';
 import { DeepPartial, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';

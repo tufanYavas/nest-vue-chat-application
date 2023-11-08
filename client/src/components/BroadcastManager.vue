@@ -12,7 +12,7 @@
 				v-for="streamWrapper in audioStreams"
 				:key="streamWrapper.stream.id"
 				autoplay
-				:streamWrapper="streamWrapper"
+				:streamWrapper="asMw(streamWrapper)"
 				@removeStream="removeStream($event)"
 			/>
 
@@ -27,7 +27,7 @@
 				v-for="streamWrapper in videoStreams"
 				:key="streamWrapper.stream.id"
 				autoplay
-				:streamWrapper="streamWrapper"
+				:streamWrapper="asMw(streamWrapper)"
 				@removeStream="removeStream($event)"
 			/>
 		</div>
@@ -81,6 +81,10 @@ export default defineComponent({
 		this.peer.on('call', this.onCall);
 	},
 	methods: {
+		// to avoid type error in template
+		asMw(streamWrapper: any) {
+			return streamWrapper as MediaStreamWrapper;
+		},
 		playSound() {
 			setTimeout(() => {
 				try {
@@ -130,14 +134,11 @@ export default defineComponent({
 				confirmButtonText: this.$t('Answer the call'),
 				timer: 30000,
 				cancelButtonColor: '#c92f2f',
-				confirmButtonColor: '#7dd54d',
+				confirmButtonColor: '#0f1012',
 			}).then((result: SweetAlertResult) => {
 				this.callSound.pause();
 				if (result.isConfirmed) {
-					const mediaConstraints: MediaStreamConstraints = {
-						video: metadata.mediaType === 'VOICE' ? false : true,
-						audio: true,
-					};
+					const mediaConstraints = this.getMediaConstraints(metadata.mediaType);
 					const getUserMedia =
 						navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 					getUserMedia(
@@ -184,6 +185,16 @@ export default defineComponent({
 				}
 			}
 		},
+		getMediaConstraints(type: MediaType) {
+			const mediaConstraints: MediaStreamConstraints = {
+				video:
+					type === 'VOICE'
+						? false
+						: { deviceId: window.selectedCameraId ? { exact: window.selectedCameraId } : undefined },
+				audio: { deviceId: window.selectedMicrophoneId ? { exact: window.selectedMicrophoneId } : undefined },
+			};
+			return mediaConstraints;
+		},
 		startCall(call: Call) {
 			if (!call.calledUser.clientId) return;
 			this.$socket.emit(SocketEventType.PRIVATE_CALL, { user: call.calledUser }, (error: string) => {
@@ -200,7 +211,7 @@ export default defineComponent({
 						confirmButtonText: this.$t('Cancel'),
 						showConfirmButton: true,
 						timer: 30000,
-						confirmButtonColor: '#c92f2f',
+						confirmButtonColor: '#0f1012',
 						allowOutsideClick: false,
 					}).then((result: SweetAlertResult) => {
 						this.callSound.pause();
@@ -212,10 +223,7 @@ export default defineComponent({
 						}
 					});
 
-					const mediaConstraints: MediaStreamConstraints = {
-						video: call.mediaType === 'VOICE' ? false : true,
-						audio: true,
-					};
+					const mediaConstraints = this.getMediaConstraints(call.mediaType);
 
 					const getUserMedia =
 						navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
@@ -231,7 +239,6 @@ export default defineComponent({
 									metadata: call,
 								},
 							);
-							console.log({ callObj });
 							myStream = { stream, callObject: callObj, isCaller: true };
 							this.handleStream(myStream, call.mediaType);
 

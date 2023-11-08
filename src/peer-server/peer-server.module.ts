@@ -1,4 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Inject, LoggerService, Module, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PeerServer } from 'peer';
 import { getOrigins } from '../utils';
@@ -6,7 +6,10 @@ import * as fs from 'fs';
 
 @Module({})
 export class PeerServerModule implements OnModuleInit {
-	constructor(private configService: ConfigService) {}
+	constructor(
+		@Inject('LoggerService') private readonly logger: LoggerService,
+		private configService: ConfigService,
+	) {}
 	onModuleInit() {
 		const sslOptions =
 			this.configService.get('SSL.CERT_PATH') && this.configService.get('SSL.PRIVKEY_PATH')
@@ -26,7 +29,7 @@ export class PeerServerModule implements OnModuleInit {
 			},
 		});
 		server.on('connection', (client) => {
-			console.log('New peer connected:', client.getId());
+			this.logger.log('New peer connected:', client.getId());
 		});
 	}
 }

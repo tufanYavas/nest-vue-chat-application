@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -10,6 +10,11 @@ import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { StatusService } from '../status/status.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { comparePasswords, hashPassword } from '../utils';
+import { UpdatePermissionsDto } from '../admin/dtos/update-permissions.dto';
+import { plainToClass } from 'class-transformer';
+import { EventsGateway } from '../events/events.gateway';
+import { IUser } from '../server.interfaces';
+import { UserDto } from './dtos/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -23,10 +28,48 @@ export class UsersService {
 		private readonly loginLogService: LoginLogService,
 		private readonly rankRepository: RankService,
 		private readonly statusRepository: StatusService,
+		@Inject(forwardRef(() => EventsGateway))
+		private readonly eventsGateway: EventsGateway,
 	) {}
 
-	save(users: DeepPartial<User>[]) {
-		return this.usersRepository.save(users);
+	async unbanUser(id: number) {
+		const user = await this.findOne(id);
+		if (!user) throw new NotFoundException('User not found');
+		user.banned = false;
+		this.save(user);
+	}
+
+	async banUser(id: number) {
+		const user = await this.findOne(id);
+		if (!user) throw new NotFoundException('User not found');
+		user.banned = true;
+		this.save(user);
+	}
+
+	userUpdated(user: IUser | User) {
+		if (this.eventsGateway.server) this.eventsGateway.userUpdated(this.userToIUser(user));
+	}
+
+	userToIUser(user: IUser) {
+		return plainToClass(UserDto, user, { excludeExtraneousValues: true }) as unknown as IUser;
+	}
+
+	async updatePermissions(user: User, body: UpdatePermissionsDto) {
+		const rank = await this.rankRepository.findOne(body.rank_id);
+		if (!rank) throw new NotFoundException('Rank not found');
+		user.rank = rank;
+		for (const key in user.permission) {
+			if (key.startsWith('can')) {
+				user.permission[key] = body.permissions[key];
+			}
+		}
+		await this.save(user);
+		return user;
+	}
+
+	async save(user: User) {
+		const u = await this.usersRepository.save(user);
+		this.userUpdated(u);
 	}
 
 	async setStatus(user: User, id: number) {
@@ -39,7 +82,6 @@ export class UsersService {
 		}
 		user.status = status;
 
-		// if not guest
 		if (user.id > 0) {
 			this.usersRepository.save(user);
 		}
@@ -63,18 +105,19 @@ export class UsersService {
 		const preference = await this.preferenceRepository.save(this.preferenceRepository.create());
 		user.preference = preference;
 
-		const defaultRank = await this.rankRepository.findOne(parseInt(process.env.DEFAULT_RANK_ID));
+		// TODO: default rank id and status id should be store in db
+		const defaultRank = await this.rankRepository.findOne(2);
 		user.rank = defaultRank;
 
-		const defaultStatus = await this.statusRepository.findOne(parseInt(process.env.DEFAULT_STATUS_ID));
+		const defaultStatus = await this.statusRepository.findOne(1);
 		user.status = defaultStatus;
 		return user;
 	}
 
 	async create(options: DeepPartial<User>) {
 		const user = await this.createUserDontSave(options);
-
-		return this.usersRepository.save(user);
+		await this.save(user);
+		return user;
 	}
 
 	findOne(id: number) {
@@ -85,6 +128,13 @@ export class UsersService {
 	}
 
 	findOneWithAllRelations(where: object) {
+		return this.usersRepository.findOne({
+			where,
+			relations: ['permission', 'preference', 'status', 'rank'],
+		});
+	}
+
+	findWithAllRelations(where: object) {
 		return this.usersRepository.findOne({
 			where,
 			relations: ['permission', 'preference', 'status', 'rank'],
@@ -103,6 +153,10 @@ export class UsersService {
 		return this.usersRepository.find({ where: { username } });
 	}
 
+	findAll() {
+		return this.usersRepository.find({});
+	}
+
 	findWithRelations(where: object, relations: string[]) {
 		return this.usersRepository.find({ where, relations });
 	}
@@ -112,16 +166,9 @@ export class UsersService {
 		if (!user) {
 			throw new NotFoundException('User not found');
 		}
+		if (attrs.password) attrs.password = await hashPassword(attrs.password);
 		Object.assign(user, attrs);
-		return this.usersRepository.save(user);
-	}
-
-	async remove(id: number) {
-		const user = await this.findOne(id);
-		if (!user) {
-			throw new NotFoundException('User not found');
-		}
-		return this.usersRepository.remove(user);
+		return this.save(user);
 	}
 
 	async updateProfile(userId: number, updateProfileDto: UpdateProfileDto): Promise<User> {
@@ -150,7 +197,7 @@ export class UsersService {
 			user.preference.notificationEnabled =
 				updateProfileDto.notificationEnabled ?? user.preference.notificationEnabled;
 		}
-		this.usersRepository.save(user);
+		await this.save(user);
 		return user;
 	}
 }

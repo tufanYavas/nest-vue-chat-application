@@ -1,6 +1,5 @@
 import { Socket } from 'socket.io-client';
 import Swal from 'sweetalert2';
-import { $t } from 'vue-i18n';
 import { MediaConnection } from 'peerjs';
 
 declare module '@vue/runtime-core' {
@@ -14,10 +13,12 @@ declare global {
 		$: typeof import('jquery');
 		jQuery: typeof import('jquery');
 		Swal: typeof Swal;
-		// socket: Socket<DefaultEventsMap, DefaultEventsMap>;
 		webkitMediaStream: any;
 		socket: Socket;
 		$t: typeof $t;
+		selectedCameraId: string | undefined;
+		selectedMicrophoneId: string | undefined;
+		showSystemMessages: boolean;
 	}
 	interface Navigator {
 		userLanguage: string;
@@ -75,11 +76,29 @@ interface ISendMessage {
 	contentType?: 'IMAGE';
 	contentPath?: string;
 }
+
+interface ISettings {
+	id: number;
+	title: string;
+	logo: string;
+	themeColor: string;
+	doubleLoginActive: boolean;
+	guestLoginActive: boolean;
+	newMemberActive: boolean;
+	membersCanPM: boolean;
+	membersCanVoiceCall: boolean;
+	membersCanVideoCall: boolean;
+	guestsCanPM: boolean;
+	guestsCanVoiceCall: boolean;
+	guestsCanVideoCall: boolean;
+}
+
 interface IUserForClient extends IUser {
 	room: IRoom;
 	clientId: string;
 }
 interface IRank {
+	id: number;
 	name: string;
 	value: number;
 }
@@ -89,16 +108,16 @@ interface IStatus {
 }
 
 interface IPermission {
-	canSeeConsolePanel: boolean;
+	canSeeAdminPanel: boolean;
 	canEditGeneralSettings: boolean;
 	canEditThemeSettings: boolean;
 	canResetServer: boolean;
 	canEditRooms: boolean;
 	canEditUsers: boolean;
-	canSeeLoginRecords: boolean;
+	canSeeLoginLogs: boolean;
 	canEditStatusList: boolean;
 	canEditRanks: boolean;
-	canSeeComplaints: boolean;
+	canSeeReports: boolean;
 	canSeeIpOfUsers: boolean;
 	canSeeIpBans: boolean;
 	canSendToAll: boolean;
@@ -120,6 +139,7 @@ interface IPreference {
 	allowVideoCallsFromOthers: boolean;
 }
 interface IUser {
+	id: number;
 	username: string;
 	gender: boolean;
 	about: string;
@@ -147,7 +167,6 @@ interface IRoom {
 	row: number;
 	name: string;
 	slogan: string;
-	active: boolean;
 	default: boolean;
 	bg: string;
 	hasPassword: boolean;

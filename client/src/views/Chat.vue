@@ -1,5 +1,6 @@
 <template>
 	<div>
+		<AdminPanel v-if="isAdminPanelVisible && user" @closeAdminPanel="isAdminPanelVisible = false" :user="user" />
 		<div id="wrapper">
 			<!-- fake inputs for browser auto complete -->
 			<input type="text" name="fake-username" autocomplete="off" style="display: none" />
@@ -15,11 +16,14 @@
 				<Settings
 					v-if="user"
 					ref="settingsComponent"
-					v-model:user="user"
-					@resetChat="messages.length = 0"
+					:user="user"
+					:unreadPrivateMessageCount="unreadPrivateMessageCount"
+					@resetChat="resetChat"
 					@showProfileinfo="showProfileinfo($event)"
 					@showPrivateMessages="showPrivateMessages"
-					@sendToAll="sendMessage({ messageType: 'ALL_MESSAGE' })"
+					@sendToAll="sendMessage({ messageType: 'ALL_MESSAGE', text: $event })"
+					@showAdminPanel="showAdminPanel"
+					@updateUser="Object.assign(user, $event)"
 				/>
 
 				<div @click="showPrivateMessages" id="messagebox" class="pmboxmobile">
@@ -58,6 +62,7 @@
 				ref="left"
 				:rooms="rooms"
 				:privateMessages="privateMessages"
+				:settings="settings"
 				v-model:user="user"
 				v-model:allUsers="allUsers"
 				v-model:isRightVisible="isRightVisible"
@@ -81,9 +86,9 @@
 						<div class="inner">
 							<div id="roomname">
 								{{
-									(isPrivateChatVisible && privateChattingUser
+									((isPrivateChatVisible && privateChattingUser
 										? privateChattingUser.username
-										: user?.room.name) + ' |&nbsp;'
+										: user?.room.name) ?? '') + ' |&nbsp;'
 								}}
 							</div>
 							<div id="roomslogan">
@@ -111,6 +116,7 @@
 					<div id="send">
 						<div class="inner">
 							<input
+								id="message-input"
 								@keyup.enter="sendMessage()"
 								autocomplete="off"
 								type="text"
@@ -121,64 +127,29 @@
 							<div class="actions">
 								<ul>
 									<li id="actionmenu">
-										<span id="mic" title="Mikrofon" ref="aa" @click="dod">
-											<i id="micload" class="fa fa-smile-o" aria-hidden="true"></i>
+										<span title="Emoji" ref="emojiElement" @click="emojiClicked">
+											<i class="fa fa-smile-o" aria-hidden="true"></i>
 										</span>
-										<span id="mic" title="Mikrofon">
-											<i id="micload" class="fa fa-microphone" aria-hidden="true"></i>
+										<span :title="$t('Send Image')">
+											<label for="iupload">
+												<i class="fa fa-image" aria-hidden="true"></i>
+												<input
+													@change="uploadImage($event, 'CHAT_IMAGE')"
+													accept=".jpg, .jpeg, .png, .gif"
+													type="file"
+													id="iupload"
+													name="iupload"
+												/>
+											</label>
 										</span>
-										<span id="broadcast" title="Yayına Katıl">
-											<i id="broadcastload" class="fas fa-broadcast-tower" aria-hidden="true"></i>
-										</span>
-										<span id="webcam" title="Kamera">
-											<i id="webcamload" class="fas fa-video" aria-hidden="true"></i>
-										</span>
-										<span id="mmute" title="Mikrofonu Sessiz'e al">
-											<i class="fa fa-volume-off" aria-hidden="true"></i>
-										</span>
-										<span id="showAll" title="Menü">
-											<i style="margin-top: 15px" class="fa fa-chevron-up" aria-hidden="true"></i>
-										</span>
-										<span class="showm">
-											<span :title="$t('Send Image')">
-												<label for="iupload">
-													<i class="fa fa-image" aria-hidden="true"></i>
-													<input
-														@change="uploadImage($event, 'CHAT_IMAGE')"
-														accept=".jpg, .jpeg, .png, .gif"
-														type="file"
-														id="iupload"
-														name="iupload"
-													/>
-													<span class="show-xs">{{ $t('Send Image') }}</span>
-												</label>
-											</span>
-											<span id="mrow" title="Mikrofon sırası">
-												<i id="rowload" class="fa fa-hand-paper-o" aria-hidden="true"></i>
-												<span class="show-xs">Mikrofon Sırası</span>
-											</span>
-											<span id="radiolabel" title="Radyo">
-												<i id="radioload" class="fa fa-music" aria-hidden="true"></i>
-												<span class="show-xs">Radyo</span>
-											</span>
-											<span id="record" title="Ses kaydı göndermek için basılı tutun">
-												<i class="fa fa-file-audio-o" aria-hidden="true"></i>
-												<span class="show-xs">Ses kaydı</span>
-											</span>
-											<span :title="$t('Change font')">
-												<i class="fa fa-font"></i>
-												<span class="show-xs">{{ $t('Change font') }}</span>
-											</span>
+										<span :title="$t('Change font')" @click="changeFont">
+											<i class="fa fa-font"></i>
 										</span>
 									</li>
 								</ul>
 							</div>
 
-							<button
-								id="sendmsg"
-								:style="{ 'background-color': settings.themeColor }"
-								@click="sendMessage()"
-							>
+							<button :style="{ 'background-color': settings.themeColor }" @click="sendMessage()">
 								<i class="fa fa-paper-plane"></i>
 							</button>
 						</div>
@@ -210,7 +181,7 @@ import StatusVue from '@/components/Status.vue';
 import axios, { AxiosResponse } from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { Ref, defineComponent, ref } from 'vue';
-import { Call, IRoom, ISendMessage, IUser, IUserForClient, MessageType } from '@/types';
+import { Call, IRoom, ISendMessage, ISettings, IUser, IUserForClient, MessageType } from '@/types';
 import { SocketEventType } from '@/socket/socket.enum';
 import SettingsVue from '@/components/Settings.vue';
 import { getProfileImagePath, swalServerError } from '@/utils';
@@ -218,6 +189,7 @@ import LeftVue from '@/components/Left.vue';
 import ChatMessageAreaVue from '@/components/ChatMessageArea.vue';
 import { EmojiButton } from '@joeattardi/emoji-button';
 import BroadcastManager from '@/components/BroadcastManager.vue';
+import AdminPanelVue from '@/components/admin/AdminPanel.vue';
 
 export default defineComponent({
 	name: 'Chat',
@@ -227,9 +199,10 @@ export default defineComponent({
 		Left: LeftVue,
 		ChatMessageArea: ChatMessageAreaVue,
 		BroadcastManager: BroadcastManager,
+		AdminPanel: AdminPanelVue,
 	},
 	data(): {
-		settings: { themeColor: string; logo: string };
+		settings: ISettings;
 		isLoading: boolean;
 		messages: ISendMessage[];
 		allUsers: IUserForClient[];
@@ -239,6 +212,7 @@ export default defineComponent({
 		user: IUserForClient | null;
 		unreadPrivateMessageCount: number;
 		isPrivateChatVisible: boolean;
+		isAdminPanelVisible: boolean;
 		privateChattingUser: IUserForClient | undefined;
 		privateMessages: Ref<Record<string, ISendMessage[]>>;
 		alertMessage: string;
@@ -246,10 +220,7 @@ export default defineComponent({
 		picker: EmojiButton;
 	} {
 		return {
-			settings: {
-				themeColor: '#000000',
-				logo: 'logo.png',
-			},
+			settings: {} as ISettings,
 			isLoading: true,
 			messages: [],
 			allUsers: [],
@@ -259,6 +230,7 @@ export default defineComponent({
 			user: null,
 			unreadPrivateMessageCount: 0,
 			isPrivateChatVisible: false,
+			isAdminPanelVisible: false,
 			privateChattingUser: undefined,
 			privateMessages: ref<Record<string, ISendMessage[]>>({}),
 			alertMessage: '',
@@ -266,10 +238,59 @@ export default defineComponent({
 			picker: new EmojiButton({ autoHide: false, twemojiOptions: true }),
 		};
 	},
-	props: {},
+	provide() {
+		return {
+			uploadImage: this.uploadImage,
+		};
+	},
 	methods: {
-		dod() {
-			this.picker.togglePicker(this.$refs.aa as HTMLElement);
+		changeFont() {
+			Swal.fire({
+				title: `<i class='fa fa-edit'></i> ${this.$t('Edit rank')}`,
+				html: `
+				<div class="slidecontainer">
+					<label><i class="fa fa-caret-right"></i> Yazı boyutu (<span id="fonttext">10</span>pt)</label>
+					<input type="range" min="9" max="18" value="10" class="slider" id="fontSize"></div>
+				<div>
+					<label><i class="fa fa-caret-right"></i> Yazı rengi</label>
+					<input type="color" id="fontColor" value="#000000">
+				</div>
+						`,
+				showCancelButton: true,
+				cancelButtonText: this.$t('Cancel'),
+				confirmButtonText: this.$t('Save'),
+				confirmButtonColor: '#0f1012',
+				preConfirm: () => {
+					return {
+						fontSize: (document.getElementById('fontSize') as HTMLInputElement).value,
+						fontColor: (document.getElementById('fontColor') as HTMLInputElement).value,
+					};
+				},
+			})
+				.then((result) => {
+					if (result.isConfirmed) {
+						// axios
+						// 	.patch(`/admin/updateRank/${rank.id}`, result.value)
+						// 	.then(this.getRanks)
+						// 	.catch((error: any) => {
+						// 		swalServerError(error);
+						// 	});
+					}
+				})
+				.catch();
+		},
+		async logout() {
+			await axios.post('/auth/signout');
+			this.$router.push('/login');
+		},
+		showAdminPanel() {
+			this.isAdminPanelVisible = true;
+		},
+		resetChat() {
+			this.messages.length = 0;
+		},
+		emojiClicked() {
+			this.picker.togglePicker(this.$refs.emojiElement as HTMLElement);
 		},
 		showProfileinfo(clientId: string) {
 			(this.$refs.left as InstanceType<typeof LeftVue>).showProfileinfo(clientId);
@@ -291,6 +312,7 @@ export default defineComponent({
 		},
 		sendMessage(
 			options: {
+				text?: string;
 				contentType?: ISendMessage['contentType'];
 				contentPath?: ISendMessage['contentType'];
 				messageType?: MessageType;
@@ -298,13 +320,12 @@ export default defineComponent({
 		) {
 			const message: ISendMessage = {
 				user: this.user!,
-				text: this.message.trim(),
-				type: this.isPrivateChatVisible ? 'PRIVATE_MESSAGE' : 'ROOM_MESSAGE',
+				text: options.text ?? this.message.trim(),
+				type: options.messageType ?? (this.isPrivateChatVisible ? 'PRIVATE_MESSAGE' : 'ROOM_MESSAGE'),
 				toClientId:
-					options.messageType ??
-					(this.isPrivateChatVisible && this.privateChattingUser
+					this.isPrivateChatVisible && this.privateChattingUser
 						? this.privateChattingUser.clientId
-						: undefined),
+						: undefined,
 				contentType: options.contentType,
 				contentPath: options.contentPath,
 			};
@@ -363,15 +384,25 @@ export default defineComponent({
 				return Swal.fire(this.$t('Info'), this.$t("Guests can't change profile image"), 'info');
 			}
 		},
-		async uploadImage(event: any, type: 'PROFILE_IMAGE' | 'CHAT_IMAGE') {
+		async uploadImage(
+			event: any,
+			type: 'PROFILE_IMAGE' | 'CHAT_IMAGE' | 'ADMIN_PROFILE_IMAGE_UPDATE',
+			id: number | undefined = undefined,
+			cb: ((profileImage: string) => void) | undefined = undefined,
+		) {
 			const file = event.target.files[0];
 			const formData = new FormData();
 			formData.append('file', file);
-			const url = type == 'PROFILE_IMAGE' ? '/user/uploadProfileImage' : '/message/uploadChatImage';
+			const url = id
+				? `/admin/uploadProfileImage/${id}`
+				: type == 'PROFILE_IMAGE'
+				? '/user/uploadProfileImage'
+				: '/message/uploadChatImage';
 			await axios
 				.post(url, formData)
 				.then((response: AxiosResponse) => {
-					if (type === 'PROFILE_IMAGE') {
+					if (cb) cb(response.data.profileImage);
+					else if (type === 'PROFILE_IMAGE') {
 						this.user!.profileImage = response.data.profileImage;
 					} else if (type === 'CHAT_IMAGE') {
 						const imagePath = response.data.imagePath;
@@ -383,11 +414,39 @@ export default defineComponent({
 				});
 		},
 		setConnectionEvents() {
+			this.$socket.on(SocketEventType.ROOM_UPDATED, (room: IRoom) => {
+				if (!room.name) {
+					// deleted
+					this.rooms = this.rooms.filter((r) => r.id !== room.id);
+				} else {
+					const r = this.rooms.find((r) => r.id === room.id);
+					if (!r) {
+						// created
+						this.rooms.push(room);
+					} else {
+						// updated
+						Object.assign(r, room);
+					}
+				}
+				this.rooms = this.rooms.sort((a: IRoom, b: IRoom) => a.row - b.row);
+			});
+			this.$socket.on(SocketEventType.USER_UPDATED, (user: IUser) => {
+				if (user.id === this.user?.id) {
+					Object.assign(this.user, user);
+					if (this.user.banned) this.logout();
+				}
+			});
+			this.$socket.on(SocketEventType.SETTINGS_UPDATED, (settings: ISettings) => {
+				this.settings = settings;
+			});
 			this.$socket.on(SocketEventType.UPDATE_EXTRA_DATA, (event: IUserForClient) => {
 				this.upsertUser(event);
 			});
 			this.$socket.on(SocketEventType.GET_IP, (data: string) => {
 				Swal.fire(this.$t('IP Adress'), data, 'info');
+			});
+			this.$socket.on(SocketEventType.RESET_CHAT_FOR_ALL, (data: string) => {
+				this.resetChat();
 			});
 			this.$socket.on(SocketEventType.DOUBLE_LOGIN, (data: string) => {
 				Swal.fire({
@@ -401,7 +460,7 @@ export default defineComponent({
 					showConfirmButton: false,
 					showCloseButton: false,
 					confirmButtonText: this.$t('Reconnect'),
-					confirmButtonColor: '#d13131',
+					confirmButtonColor: '#0f1012',
 				});
 			});
 			this.$socket.on(SocketEventType.USER_CONNECTED, (user: IUserForClient) => {
@@ -414,7 +473,12 @@ export default defineComponent({
 				this.syncUsers(users);
 			});
 			this.$socket.on(SocketEventType.SEND_MESSAGE, (event: ISendMessage) => {
-				if (event.type == 'ROOM_EVENT') {
+				if (
+					(event.type === 'ROOM_EVENT' || event.type === 'ALL_EVENT' || event.type === 'SYSTEM_MESSAGE') &&
+					!window.showSystemMessages
+				) {
+					return;
+				} else if (event.type == 'ROOM_EVENT') {
 					if (event.user.room.id == this.user?.room.id && event.text == 'entered') {
 						event.text = `${event.user.username} ${this.$t('entered the room...')}`;
 						this.addMessage(event);
@@ -422,10 +486,11 @@ export default defineComponent({
 						event.text = `${event.user.username} ${this.$t('leaved the room...')}`;
 						this.addMessage(event);
 					}
-				} else if (event.type == 'ROOM_MESSAGE') {
 					this.messages.push(event);
 				} else if (event.type == 'PRIVATE_MESSAGE') {
 					this.addPrivateMessage(event);
+				} else {
+					this.messages.push(event);
 				}
 			});
 		},
@@ -433,7 +498,9 @@ export default defineComponent({
 	async mounted() {
 		try {
 			const _user = (await axios.get('/user/me')).data;
-			this.rooms = (await axios.get('/room')).data;
+			this.rooms = (await axios.get('/room')).data.sort((a: IRoom, b: IRoom) => a.row - b.row);
+			this.settings = (await axios.get('/settings')).data;
+			document.title = this.settings.title;
 
 			if (this.$socket.connected) {
 				this.$socket.disconnect();
@@ -449,7 +516,7 @@ export default defineComponent({
 			});
 			this.$socket.connect();
 		} catch (error) {
-			console.error(error);
+			this.logout();
 		}
 	},
 	async created() {

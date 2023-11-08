@@ -14,7 +14,13 @@
 						<img style="width: 150px; height: auto" :src="`uploads/chat-images/${message.contentPath}`" />
 					</a>
 					<span v-else>
-						<span style="font-weight: 600">{{ message.user.username }}:</span>
+						<span style="font-weight: 600"
+							>{{ message.user.username }}
+							<span v-if="message.type === 'ALL_MESSAGE'" style="color: red; font-weight: bold"
+								>&nbsp;({{ $t('To All') }})</span
+							>
+							:</span
+						>
 						<span :style="{ color: message.user.preference.fontColor ?? 'black' }">{{ message.text }}</span>
 					</span>
 				</span>

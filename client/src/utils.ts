@@ -2,7 +2,7 @@ import { IUser, IUserForClient } from '@/types';
 
 export function swalServerError(error: any) {
 	let message: string = '';
-	if (error.response.data.message) {
+	if (error.response && error.response.data.message) {
 		if (typeof error.response.data.message === 'object') {
 			for (const msg of error.response.data.message) {
 				message += window.$t(msg) + '<br>';
@@ -18,6 +18,7 @@ export function swalServerError(error: any) {
 
 export function getProfileImagePath(user: IUserForClient | IUser): string {
 	if (!user) return '';
+	if (user.profileImage && user.profileImage.includes('data:')) return user.profileImage;
 	return user.profileImage
 		? `uploads/profile-images/${user.profileImage}`
 		: `images/${user.gender ? 'man' : 'woman'}-profile.png`;

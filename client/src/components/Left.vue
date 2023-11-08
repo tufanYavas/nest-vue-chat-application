@@ -267,7 +267,7 @@ import { getProfileImagePath, swalServerError } from '@/utils';
 import axios from 'axios';
 import Swal, { SweetAlertResult } from 'sweetalert2';
 import { defineComponent, Ref } from 'vue';
-import { Call, IRoom, ISendMessage, IUser, IUserForClient } from '@/types';
+import { Call, IRoom, ISendMessage, ISettings, IUser, IUserForClient } from '@/types';
 import SettingsVue from './Settings.vue';
 import { SocketEventType } from '@/socket/socket.enum';
 
@@ -329,6 +329,10 @@ export default defineComponent({
 			type: Object as () => Record<string, ISendMessage[]>,
 			required: true,
 		},
+		settings: {
+			type: Object as () => ISettings,
+			required: true,
+		},
 	},
 	emits: [
 		'update:user',
@@ -342,7 +346,17 @@ export default defineComponent({
 	methods: {
 		getProfileImagePath,
 		startCall(call: Call) {
-			this.$emit('call', call);
+			if (this.user.rank.value === 1 && !this.settings.guestsCanVoiceCall && call.mediaType === 'VOICE') {
+				Swal.fire(this.$t('Error'), this.$t('Guest voice call has been disabled.'), 'error');
+			} else if (this.user.rank.value === 2 && !this.settings.membersCanVoiceCall && call.mediaType === 'VOICE') {
+				Swal.fire(this.$t('Error'), this.$t('Member voice call has been disabled.'), 'error');
+			} else if (this.user.rank.value === 2 && !this.settings.guestsCanVideoCall && call.mediaType === 'VIDEO') {
+				Swal.fire(this.$t('Error'), this.$t('Guest video call has been disabled.'), 'error');
+			} else if (this.user.rank.value === 2 && !this.settings.membersCanVideoCall && call.mediaType === 'VIDEO') {
+				Swal.fire(this.$t('Error'), this.$t('Member video call has been disabled.'), 'error');
+			} else {
+				this.$emit('call', call);
+			}
 		},
 		banUser() {},
 		reportUser() {},
@@ -365,8 +379,14 @@ export default defineComponent({
 			this.$socket.emit(SocketEventType.JOIN_ROOM, { room, password });
 		},
 		privateMessage(user: IUserForClient) {
-			this.$emit('update:isPrivateChatVisible', true);
-			this.$emit('privateChatStarted', { ...user });
+			if (this.user.rank.value === 1 && !this.settings.guestsCanPM) {
+				Swal.fire(this.$t('Error'), this.$t('Guest private messaging has been disabled.'), 'error');
+			} else if (this.user.rank.value === 2 && !this.settings.membersCanPM) {
+				Swal.fire(this.$t('Error'), this.$t('Member private messaging has been disabled.'), 'error');
+			} else {
+				this.$emit('update:isPrivateChatVisible', true);
+				this.$emit('privateChatStarted', { ...user });
+			}
 		},
 		setAllUnvisibleLeft() {
 			if (this.isAllUserListVisible) {
@@ -409,7 +429,7 @@ export default defineComponent({
 						showCancelButton: true,
 						cancelButtonText: this.$t('Later'),
 						confirmButtonText: this.$t('Sign up'),
-						confirmButtonColor: '#d13131',
+						confirmButtonColor: '#0f1012',
 					}).then((result: SweetAlertResult) => {
 						if (result.isConfirmed) {
 							(this.$refs.settingsComponent as InstanceType<typeof SettingsVue>).showRegisterForm();
@@ -421,7 +441,7 @@ export default defineComponent({
 						html: `
 							<div id="profilesettings">
 							<div id="_profileImage" class="profile-image"><img src="${this.profileImagePath}" height="120"
-								alt="root" />
+								alt="${this.user?.username}" />
 								<div class='placeholder'><i class='fa fa-cloud-upload' aria-hidden='true'></i></div>
 							</div>
 							<div class="profile-name">${this.user?.username}</div>
@@ -482,10 +502,10 @@ export default defineComponent({
 						showCancelButton: true,
 						cancelButtonText: this.$t('Cancel'),
 						confirmButtonText: 'Kaydet',
-						confirmButtonColor: '#d13131',
+						confirmButtonColor: '#0f1012',
 						didOpen: () => {
 							document!.getElementById('_profileImage')!.addEventListener('change', () => {
-								document!.getElementById('uploadFile')!.click();
+								document!.getElementById('uploadfile')!.click();
 							});
 						},
 						preConfirm: () => {
@@ -615,23 +635,17 @@ export default defineComponent({
 		roomUsersLength(): number {
 			return this.allUsers.filter((u) => u.room.id == this.user.room.id).length;
 		},
-		filteredUsers() {
-			if (!this.searchUsersText) return this.roomUsers;
-
+		filteredUsers(): IUserForClient[] {
 			return this.roomUsers.filter((user) =>
 				user.username.toLowerCase().includes(this.searchUsersText.toLowerCase()),
 			);
 		},
-		filteredAllUsers() {
-			if (!this.searchAllUsersText) return this.allUsers;
-
+		filteredAllUsers(): IUserForClient[] {
 			return this.allUsers.filter((user) =>
 				user.username.toLowerCase().includes(this.searchAllUsersText.toLowerCase()),
 			);
 		},
-		filteredRooms() {
-			if (!this.searchRoomText) return this.rooms;
-
+		filteredRooms(): IRoom[] {
 			return this.rooms.filter((room) => room.name.toLowerCase().includes(this.searchRoomText.toLowerCase()));
 		},
 		roomUsers() {

@@ -19,9 +19,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { MessageDto } from './dto/message.dto';
 import { AuthGuard } from '../guards/auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { getFileInterceptor } from '../utils';
 
 @Serialize(MessageDto)
 @Controller('message')
@@ -30,26 +28,7 @@ export class MessageController {
 
 	@Post('uploadChatImage')
 	@UseGuards(AuthGuard)
-	@UseInterceptors(
-		FileInterceptor('file', {
-			storage: diskStorage({
-				destination: './client/public/uploads/chat-images',
-				filename: (req, file, cb) => {
-					const randomName = Array(32)
-						.fill(null)
-						.map(() => Math.round(Math.random() * 16).toString(16))
-						.join('');
-					return cb(null, `${randomName}${extname(file.originalname)}`);
-				},
-			}),
-			fileFilter: (req, file, cb) => {
-				if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-					return cb(new HttpException('Only image files are allowed!', HttpStatus.BAD_REQUEST), false);
-				}
-				cb(null, true);
-			},
-		}),
-	)
+	@UseInterceptors(getFileInterceptor('./client/public/uploads/chat-images'))
 	async uploadChatImage(
 		@UploadedFile(
 			new ParseFilePipe({

@@ -11,7 +11,7 @@ export class Setting {
 	@Column({ default: 'logo.png' })
 	logo: string;
 
-	@Column({ default: '#d13131' })
+	@Column({ default: '#0f1012' })
 	themeColor: string;
 
 	@Column({ default: true })

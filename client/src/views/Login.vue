@@ -1,42 +1,33 @@
 <template>
-	<div class="login-container">
+	<div class="center-flex">
 		<section id="content">
-			<form onsubmit="return false;" id="loginForm" method="post" class="registration-form">
+			<form>
 				<h1>
 					<img src="../assets/logo.png" height="60" alt="Logo" />
 				</h1>
 				<div>
-					<input type="text" name="username" placeholder="Kullanıcı Adınız" required v-model="username" />
+					<input type="text" name="username" :placeholder="$t('Username')" required v-model="username" />
 					<input
 						type="password"
-						placeholder="Parolanız"
+						:placeholder="$t('Password')"
 						name="password"
 						v-if="showPassword"
 						v-model="password"
 					/>
-					<input type="text" placeholder="Ajan Girişi" name="rumuz" v-if="showNickname" v-model="nickname" />
 				</div>
 
-				<div class="cinsiyet-alani" v-if="showGender">
-					<input id="erkek" type="radio" name="gender" value="1" checked v-model="gender" />
-					<label id="erkekLabel" for="erkek">Bay</label>
-					<input id="kadin" type="radio" name="gender" value="0" v-model="gender" />
-					<label id="kadinLabel" for="kadin">Bayan</label>
+				<div class="gender-area" v-if="showGender">
+					<input id="man" type="radio" name="gender" value="1" checked v-model="gender" />
+					<label id="manLabel" for="man">{{ $t('Man') }}</label>
+					<input id="woman" type="radio" name="gender" value="0" v-model="gender" />
+					<label id="womanLabel" for="woman">{{ $t('Woman') }}</label>
 				</div>
 
 				<div class="loginBtnWrapper">
-					<button type="button" @click="validateUser()" id="loginBtn">Bağlan!</button>
+					<button type="button" @click="validateUser()" id="loginBtn">{{ $t('Connect') }}</button>
 				</div>
 			</form>
-			<!-- form -->
-			<div class="btn">
-				<a href="#">Gizlilik</a>
-				<a target="_blank" href="#">Kurallar</a>
-				<a target="_blank" href="#">Sohbet</a>
-			</div>
-			<!-- button -->
 		</section>
-		<!-- content -->
 	</div>
 </template>
 
@@ -144,7 +135,6 @@ export default defineComponent({
 		},
 	},
 });
-
 </script>
 
 <style scoped>

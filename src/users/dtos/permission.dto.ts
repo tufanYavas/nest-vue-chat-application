@@ -2,16 +2,13 @@ import { Expose } from 'class-transformer';
 
 export class PermissionDto {
 	@Expose()
-	canSeeConsolePanel: boolean;
+	id: number;
+
+	@Expose()
+	canSeeAdminPanel: boolean;
 
 	@Expose()
 	canEditGeneralSettings: boolean;
-
-	@Expose()
-	canEditThemeSettings: boolean;
-
-	@Expose()
-	canResetServer: boolean;
 
 	@Expose()
 	canEditRooms: boolean;
@@ -20,7 +17,7 @@ export class PermissionDto {
 	canEditUsers: boolean;
 
 	@Expose()
-	canSeeLoginRecords: boolean;
+	canSeeLoginLogs: boolean;
 
 	@Expose()
 	canEditStatusList: boolean;
@@ -29,7 +26,7 @@ export class PermissionDto {
 	canEditRanks: boolean;
 
 	@Expose()
-	canSeeComplaints: boolean;
+	canSeeReports: boolean;
 
 	@Expose()
 	canSeeIpBans: boolean;

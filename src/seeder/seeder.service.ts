@@ -62,28 +62,45 @@ export class SeederService {
 			}
 		}
 		rootUser.rank = await this.rankService.findOne(7);
-		await this.usersService.save([rootUser]);
+		await this.usersService.save(rootUser);
 
-		await this.usersService.create({
+		const guestUser = await this.usersService.create({
 			id: -1,
 			username: 'guest',
 			gender: true,
 			password: '',
 		});
+		guestUser.rank = await this.rankService.findOne(1);
+		await this.usersService.save(guestUser);
 
 		this.loggerService.log('Users seeded');
 	}
 
 	async seedRooms() {
 		await this.roomService.create({
-			active: true,
 			name: 'Room',
 			slogan: 'Best Room',
 			default: true,
 			row: 1,
 			bg: null,
 			password: null,
-		}),
-			this.loggerService.log('Rooms seeded');
+		});
+		await this.roomService.create({
+			name: 'Room 2',
+			slogan: 'Best Room 2',
+			default: false,
+			row: 2,
+			bg: null,
+			password: null,
+		});
+		await this.roomService.create({
+			name: 'Room 3',
+			slogan: 'Best Room 3',
+			default: false,
+			row: 3,
+			bg: null,
+			password: null,
+		});
+		this.loggerService.log('Rooms seeded');
 	}
 }

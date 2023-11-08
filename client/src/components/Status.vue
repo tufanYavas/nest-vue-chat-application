@@ -22,7 +22,6 @@
 </template>
 
 <script lang="ts">
-import { IUserForClient } from '@/types';
 import axios from 'axios';
 import { defineComponent } from 'vue';
 import { IStatus } from '@/types';

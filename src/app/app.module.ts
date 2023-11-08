@@ -15,6 +15,7 @@ import { EventsModule } from '../events/events.module';
 import { WinstonLoggerModule } from '../logger/winston-logger.module';
 import { SeederModule } from '../seeder/seeder.module';
 import { PeerServerModule } from '../peer-server/peer-server.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
 	imports: [
@@ -51,6 +52,7 @@ import { PeerServerModule } from '../peer-server/peer-server.module';
 		WinstonLoggerModule,
 		SeederModule,
 		PeerServerModule,
+		AdminModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

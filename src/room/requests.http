@@ -18,13 +18,12 @@ GET http://localhost:3000/api/room/3
 
 
 ### Update room
-PATCH http://localhost:3000/api/room/4
+PATCH http://localhost:3000/api/room/1
 Content-Type: application/json
 
 {
     "name": "Room 3",
     "row": 1,
-    "active": true,
     "default": true,
     "bg": "https://www.w3schools.com/tags/img_girl.jpg",
     "password": "123"

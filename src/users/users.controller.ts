@@ -4,10 +4,6 @@ import {
 	Post,
 	Get,
 	Patch,
-	Delete,
-	Param,
-	Query,
-	NotFoundException,
 	Session,
 	UseGuards,
 	UploadedFile,
@@ -17,19 +13,16 @@ import {
 	MaxFileSizeValidator,
 	ParseFilePipe,
 } from '@nestjs/common';
-import { UpdateUserDto } from './dtos/update-user.dto';
 import { UsersService } from './users.service';
 import { Serialize } from '../interceptors/serialize.interceptor';
 import { UserDto } from './dtos/user.dto';
 import { ValidateUserResponseType } from '../enums';
 import { AuthGuard } from '../guards/auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { AuthNonGuestGuard } from '../guards/auth-non-guest.guard';
 import * as fs from 'fs';
 import * as path from 'path';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
+import { getFileInterceptor } from '../utils';
 
 @Controller('user')
 @Serialize(UserDto)
@@ -38,26 +31,7 @@ export class UsersController {
 
 	@Post('uploadProfileImage')
 	@UseGuards(AuthNonGuestGuard)
-	@UseInterceptors(
-		FileInterceptor('file', {
-			storage: diskStorage({
-				destination: './client/public/uploads/profile-images',
-				filename: (req, file, cb) => {
-					const randomName = Array(32)
-						.fill(null)
-						.map(() => Math.round(Math.random() * 16).toString(16))
-						.join('');
-					return cb(null, `${randomName}${extname(file.originalname)}`);
-				},
-			}),
-			fileFilter: (req, file, cb) => {
-				if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-					return cb(new HttpException('Only image files are allowed!', HttpStatus.BAD_REQUEST), false);
-				}
-				cb(null, true);
-			},
-		}),
-	)
+	@UseInterceptors(getFileInterceptor('./client/public/uploads/profile-images'))
 	async uploadFile(
 		@UploadedFile(
 			new ParseFilePipe({
@@ -81,7 +55,7 @@ export class UsersController {
 		}
 
 		user.profileImage = file.filename;
-		this.usersService.save([user]);
+		this.usersService.save(user);
 		return { profileImage: file.filename };
 	}
 
@@ -97,6 +71,9 @@ export class UsersController {
 		const user = await this.usersService.findOneWithAllRelations({
 			id: session.user.id,
 		});
+		if (!user) {
+			throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+		}
 		if (user.id == -1) {
 			user.username = session.user.username;
 			user.gender = session.user.gender;
@@ -108,30 +85,6 @@ export class UsersController {
 	@Post('setStatus')
 	async setStatus(@Body('id') id: number, @Session() session: Express.Request['session']) {
 		return await this.usersService.setStatus(session.user, id);
-	}
-
-	@Get('/:id')
-	async findUser(@Param('id') id: string) {
-		const user = await this.usersService.findOne(parseInt(id));
-		if (!user) {
-			throw new NotFoundException('User not found');
-		}
-		return user;
-	}
-
-	@Get()
-	findAllUsers(@Query('username') username: string) {
-		return this.usersService.find(username);
-	}
-
-	@Delete('/:id')
-	removeUser(@Param('id') id: string) {
-		return this.usersService.remove(parseInt(id));
-	}
-
-	@Patch('/:id')
-	updateUser(@Param('id') id: string, @Body() body: UpdateUserDto) {
-		return this.usersService.update(parseInt(id), body);
 	}
 
 	@Post('validateUser')

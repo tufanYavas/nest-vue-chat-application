@@ -3,6 +3,7 @@ export interface IUserForClient extends IUser {
 	clientId: string;
 }
 export interface IRank {
+	id: number;
 	name: string;
 	value: number;
 }
@@ -11,16 +12,16 @@ export interface IStatus {
 }
 
 export interface IPermission {
-	canSeeConsolePanel: boolean;
+	canSeeAdminPanel: boolean;
 	canEditGeneralSettings: boolean;
 	canEditThemeSettings: boolean;
 	canResetServer: boolean;
 	canEditRooms: boolean;
 	canEditUsers: boolean;
-	canSeeLoginRecords: boolean;
+	canSeeLoginLogs: boolean;
 	canEditStatusList: boolean;
 	canEditRanks: boolean;
-	canSeeComplaints: boolean;
+	canSeeReports: boolean;
 	canSeeIpOfUsers: boolean;
 	canSeeIpBans: boolean;
 	canSendToAll: boolean;
@@ -42,6 +43,7 @@ export interface IPreference {
 	allowVideoCallsFromOthers: boolean;
 }
 export interface IUser {
+	id: number;
 	username: string;
 	gender: boolean;
 	about: string;
@@ -69,7 +71,6 @@ export interface IRoom {
 	row: number;
 	name: string;
 	slogan: string;
-	active: boolean;
 	default: boolean;
 	bg: string;
 	hasPassword: boolean;

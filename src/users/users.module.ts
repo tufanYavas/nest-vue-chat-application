@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -10,6 +10,7 @@ import { Permission } from '../users/entities/permission.entity';
 import { LoginlogModule } from '../login-log/login-log.module';
 import { RankModule } from '../rank/rank.module';
 import { StatusModule } from '../status/status.module';
+import { EventsModule } from '../events/events.module';
 
 @Module({
 	providers: [
@@ -19,12 +20,14 @@ import { StatusModule } from '../status/status.module';
 			useClass: CurrentUserInterceptor,
 		},
 	],
-	imports: [TypeOrmModule.forFeature([User, Preference, Permission]), LoginlogModule, RankModule, StatusModule],
+	imports: [
+		TypeOrmModule.forFeature([User, Preference, Permission]),
+		LoginlogModule,
+		RankModule,
+		StatusModule,
+		forwardRef(() => EventsModule),
+	],
 	exports: [UsersService],
 	controllers: [UsersController],
 })
-export class UsersModule {
-	// configure(consumer: MiddlewareConsumer) {
-	// 	consumer.apply(CurrentUserMiddleware).forRoutes('*');
-	// }
-}
+export class UsersModule {}

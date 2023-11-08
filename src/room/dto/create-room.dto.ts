@@ -1,7 +1,7 @@
 import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateRoomDto {
-	@IsInt({ message: 'Value must be a number' })
+	@IsInt({ message: 'Row must be a number' })
 	row: number;
 
 	@IsString({ message: 'Name should be a string.' })
@@ -9,14 +9,11 @@ export class CreateRoomDto {
 	@MaxLength(18, { message: 'Name can be at most 18 characters long.' })
 	name: string;
 
-	@IsOptional()
 	@IsString({ message: 'Slogan should be a string.' })
 	@MaxLength(30, { message: 'Slogan can be at most 30 characters long.' })
-	slogan?: string;
+	slogan: string;
 
-	@IsBoolean({ message: 'Active should be a boolean.' })
-	active: boolean;
-
+	@IsOptional()
 	@IsBoolean({ message: 'Default should be a boolean.' })
 	default: boolean;
 

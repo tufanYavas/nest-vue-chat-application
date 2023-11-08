@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Inject, LoggerService } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, LoggerService, forwardRef } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { parse } from 'cookie';
 import { User } from '../users/entities/user.entity';
@@ -8,6 +8,7 @@ import { comparePasswords } from '../utils';
 export class AuthService {
 	constructor(
 		@Inject('LoggerService') private readonly logger: LoggerService,
+		@Inject(forwardRef(() => UsersService))
 		private readonly usersService: UsersService,
 	) {}
 
@@ -40,11 +41,11 @@ export class AuthService {
 		});
 
 		this.logger.log(`User created: ${user.id}`);
-		return user;
+		return await this.usersService.findWithAllRelations({ username });
 	}
 
 	async signin(username: string, password: string) {
-		const [user] = await this.usersService.find(username);
+		const user = await this.usersService.findWithAllRelations({ username });
 		if (!user) {
 			throw new NotFoundException('User not found');
 		}

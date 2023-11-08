@@ -1,4 +1,4 @@
-import { Inject, Injectable, LoggerService } from '@nestjs/common';
+import { Inject, Injectable, LoggerService, forwardRef } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import { LoginLogService } from '../login-log/login-log.service';
 import { RoomService } from '../room/room.service';
@@ -11,15 +11,20 @@ import { WsResponse } from '@nestjs/websockets/interfaces/ws-response.interface'
 import { IRoom, IUserForClient } from '../server.interfaces';
 
 @Injectable()
-export class SocketService {
+export class EventsService {
 	server: Server;
 	constructor(
 		@Inject('LoggerService') private readonly logger: LoggerService,
 		private readonly authService: AuthService,
 		private readonly loginLogService: LoginLogService,
 		private readonly settingsService: SettingsService,
+		@Inject(forwardRef(() => RoomService))
 		private readonly roomService: RoomService,
 	) {}
+
+	async settingsUpdated() {
+		this.server.emit(SocketEventType.SETTINGS_UPDATED, await this.settingsService.getSettings());
+	}
 
 	privateCallEnded(client: SocketWithData) {
 		const callerClient = client.data.privateChatting?.callerClient;
@@ -177,6 +182,7 @@ export class SocketService {
 
 		if (settings.doubleLoginActive || !this.isIpAlreadyLoggedIn(ip)) {
 			const room = await this.roomService.getDefaultRoom();
+			if (!room) throw new Error('There is no default room');
 			const roomName = `${room.id}${process.env.ROOM_POSTFIX}`;
 			await client.join(roomName); // should be no password in the default room
 			this.updateRoomUserCounts(this.server);
@@ -189,6 +195,7 @@ export class SocketService {
 			}
 
 			const userForSocket = new UserForSocket(
+				user.id,
 				room,
 				ip,
 				client.id,

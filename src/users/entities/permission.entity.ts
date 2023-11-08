@@ -7,7 +7,7 @@ export class Permission {
 	id: number;
 
 	@Column({ default: false })
-	canSeeConsolePanel: boolean;
+	canSeeAdminPanel: boolean;
 
 	@Column({ default: false })
 	canEditGeneralSettings: boolean;
@@ -25,7 +25,7 @@ export class Permission {
 	canEditUsers: boolean;
 
 	@Column({ default: false })
-	canSeeLoginRecords: boolean;
+	canSeeLoginLogs: boolean;
 
 	@Column({ default: false })
 	canEditStatusList: boolean;
@@ -34,7 +34,7 @@ export class Permission {
 	canEditRanks: boolean;
 
 	@Column({ default: false })
-	canSeeComplaints: boolean;
+	canSeeReports: boolean;
 
 	@Column({ default: false })
 	canSeeIpOfUsers: boolean;
