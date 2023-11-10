@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { RoomDto } from './dto/room.dto';
-import { Serialize } from '../interceptors/serialize.interceptor';
+import { Serialize } from '../common/interceptors/serialize.interceptor';
 
 @Serialize(RoomDto)
 @Controller('room')

@@ -12,7 +12,7 @@ import { Server } from 'socket.io';
 import { SocketEventType } from './socket.enum';
 import { ISendMessage, SocketWithData } from './interfaces';
 import { EventsService } from './events.service';
-import { IRoom, IUser, IUserForClient } from '../server.interfaces';
+import { IRoom, IUser, IUserForClient } from '../common/server.interfaces';
 
 @WebSocketGateway()
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {

@@ -11,7 +11,7 @@ import {
 	HttpStatus,
 	ForbiddenException,
 } from '@nestjs/common';
-import { AuthGuard } from '../guards/auth.guard';
+import { AuthGuard } from '../common/guards/auth.guard';
 import { LoginLogService } from '../login-log/login-log.service';
 import { Request, Response } from 'express';
 import { UsersService } from '../users/users.service';
@@ -20,7 +20,7 @@ import { CreateUserDto } from '../users/dtos/create-user.dto';
 import { LoginGuestDto } from '../users/dtos/login-guest.dto';
 import { LoginUserDto } from '../users/dtos/login-user.dto';
 import { UserDto } from '../users/dtos/user.dto';
-import { Serialize } from '../interceptors/serialize.interceptor';
+import { Serialize } from '../common/interceptors/serialize.interceptor';
 import { SettingsService } from '../settings/settings.service';
 
 @Controller('auth')

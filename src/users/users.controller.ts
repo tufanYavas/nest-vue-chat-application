@@ -14,15 +14,15 @@ import {
 	ParseFilePipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { Serialize } from '../interceptors/serialize.interceptor';
+import { Serialize } from '../common/interceptors/serialize.interceptor';
 import { UserDto } from './dtos/user.dto';
-import { ValidateUserResponseType } from '../enums';
-import { AuthGuard } from '../guards/auth.guard';
-import { AuthNonGuestGuard } from '../guards/auth-non-guest.guard';
+import { ValidateUserResponseType } from '../common/enums';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { AuthNonGuestGuard } from '../common/guards/auth-non-guest.guard';
 import * as fs from 'fs';
 import * as path from 'path';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
-import { getFileInterceptor } from '../utils';
+import { getFileInterceptor } from '../common/utils';
 
 @Controller('user')
 @Serialize(UserDto)

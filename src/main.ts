@@ -2,9 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import * as cookieSession from 'cookie-session';
 import { ValidationPipe } from '@nestjs/common';
-import { SocketIoAdapter } from './adapters/socket.io.adapter';
+import { SocketIoAdapter } from './common/adapters/socket.io.adapter';
 import { ConfigService } from '@nestjs/config';
-import { getOrigins } from './utils';
+import { getOrigins } from './common/utils';
+import { HttpsRedirectMiddleware } from './common/middlewares/https-redirect.middleware';
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -16,6 +17,10 @@ async function bootstrap() {
 		methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
 		credentials: true,
 	});
+
+	if (process.env.NODE_ENV === 'production') {
+		app.use(new HttpsRedirectMiddleware().use);
+	}
 
 	app.useGlobalPipes(new ValidationPipe());
 

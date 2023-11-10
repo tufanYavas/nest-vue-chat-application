@@ -17,7 +17,7 @@ import { Permission } from './permission.entity';
 import { Preference } from './preference.entity';
 import { Message } from '../../message/entities/message.entity';
 import { Report } from '../../report/entities/report.entity';
-import { hashPassword } from '../../utils';
+import { hashPassword } from '../../common/utils';
 
 @Entity()
 export class User {

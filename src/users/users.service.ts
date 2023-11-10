@@ -9,11 +9,11 @@ import { Permission } from './entities/permission.entity';
 import { DeepPartial } from 'typeorm/common/DeepPartial';
 import { StatusService } from '../status/status.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
-import { comparePasswords, hashPassword } from '../utils';
+import { comparePasswords, hashPassword } from '../common/utils';
 import { UpdatePermissionsDto } from '../admin/dtos/update-permissions.dto';
 import { plainToClass } from 'class-transformer';
 import { EventsGateway } from '../events/events.gateway';
-import { IUser } from '../server.interfaces';
+import { IUser } from '../common/server.interfaces';
 import { UserDto } from './dtos/user.dto';
 
 @Injectable()

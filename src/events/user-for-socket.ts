@@ -1,5 +1,5 @@
 import { plainToClass } from 'class-transformer';
-import { IRoom, IPermission, IPreference, IRank, IStatus } from '../server.interfaces';
+import { IRoom, IPermission, IPreference, IRank, IStatus } from '../common/server.interfaces';
 import { SocketUserDto } from './dtos/socket-user.dto';
 import { IUserForSocket } from './interfaces';
 

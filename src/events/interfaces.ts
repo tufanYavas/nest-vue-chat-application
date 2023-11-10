@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io';
-import { IUserForClient } from '../server.interfaces';
+import { IUserForClient } from '../common/server.interfaces';
 import { UserForSocket } from './user-for-socket';
 
 export interface SocketWithData extends Socket {

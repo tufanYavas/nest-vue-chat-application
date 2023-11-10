@@ -8,7 +8,7 @@ import { ISendMessage, SocketWithData } from './interfaces';
 import { SocketEventType } from './socket.enum';
 import { UserForSocket } from './user-for-socket';
 import { WsResponse } from '@nestjs/websockets/interfaces/ws-response.interface';
-import { IRoom, IUserForClient } from '../server.interfaces';
+import { IRoom, IUserForClient } from '../common/server.interfaces';
 
 @Injectable()
 export class EventsService {

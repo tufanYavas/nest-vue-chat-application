@@ -8,7 +8,7 @@ import { UpdateRoomRowDto } from './dto/update-room-row';
 import { EventsGateway } from '../events/events.gateway';
 import { plainToClass } from 'class-transformer';
 import { RoomDto } from './dto/room.dto';
-import { IRoom } from '../server.interfaces';
+import { IRoom } from '../common/server.interfaces';
 
 @Injectable()
 export class RoomService {

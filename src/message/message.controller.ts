@@ -16,10 +16,10 @@ import {
 } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { Serialize } from '../interceptors/serialize.interceptor';
+import { Serialize } from '../common/interceptors/serialize.interceptor';
 import { MessageDto } from './dto/message.dto';
-import { AuthGuard } from '../guards/auth.guard';
-import { getFileInterceptor } from '../utils';
+import { AuthGuard } from '../common/guards/auth.guard';
+import { getFileInterceptor } from '../common/utils';
 
 @Serialize(MessageDto)
 @Controller('message')

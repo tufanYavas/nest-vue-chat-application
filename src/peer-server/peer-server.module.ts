@@ -1,7 +1,7 @@
 import { Inject, LoggerService, Module, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PeerServer } from 'peer';
-import { getOrigins } from '../utils';
+import { getOrigins } from '../common/utils';
 import * as fs from 'fs';
 
 @Module({})
